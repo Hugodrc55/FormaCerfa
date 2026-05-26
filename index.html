@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>forma+ | Dossier d'inscription</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="cerfa_template.js"></script>
+<style>
+:root {
+  --purple:      #8B3FF0;
+  --purple-dark: #6B22D0;
+  --purple-50:   #f5f0ff;
+  --purple-100:  #ede5ff;
+  --orange:      #F5A200;
+  --orange-50:   #fff8e6;
+  --pink:        #F0176B;
+  --pink-50:     #fff0f6;
+  --green:       #1AC75A;
+  --white:       #ffffff;
+  --gray-50:     #f9f9fb;
+  --gray-100:    #f1eef9;
+  --gray-200:    #e4dfee;
+  --gray-300:    #c8c0d8;
+  --gray-400:    #9d92b0;
+  --gray-500:    #6e6385;
+  --gray-600:    #4d4464;
+  --gray-700:    #332b4a;
+  --gray-800:    #1e1830;
+  --gray-900:    #100c1e;
+  --error:       #ef4444;
+  --radius:      10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+  position: sticky; top:0; z-index:100;
+}
+.header-inner {
+  max-width: 860px; margin: 0 auto; padding: 0 32px;
+  height: 72px; display: flex; align-items: center; justify-content: space-between;
+}
+.logo img { height: 52px; width: auto; display: block; }
+.logo-fallback { font-size:20px; font-weight:800; color:var(--gray-900); letter-spacing:-0.4px; display:none; }
+.header-right { font-size:12px; color:var(--gray-400); font-weight:500; }
+
+/* ── Views ── */
+.view { display:none; }
+.view.active { display:block; animation: fadeUp 0.35s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Selection view ── */
+.select-container {
+  max-width: 600px; margin: 0 auto; padding: 56px 24px 80px;
+  text-align: center;
+}
+.select-container h1 { font-size:26px; font-weight:800; color:var(--gray-900); letter-spacing:-0.4px; margin-bottom:8px; }
+.select-container p { font-size:15px; color:var(--gray-500); margin-bottom:40px; }
+
+.choice-cards { display:grid; grid-template-columns:1fr; gap:12px; text-align:left; }
+.choice-card { position:relative; }
+.choice-card input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+.choice-card label {
+  display:flex; align-items:center; gap:18px;
+  padding:20px 24px; border:1.5px solid var(--gray-200); border-radius:var(--radius);
+  cursor:pointer; transition:all 0.18s; background:var(--white);
+}
+.choice-card label:hover { border-color:var(--purple); background:var(--purple-50); }
+.choice-card input:checked + label { border-color:var(--purple); background:var(--purple-50); box-shadow:0 0 0 3px rgba(139,63,240,0.1); }
+
+.choice-icon {
+  width:46px; height:46px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.choice-icon svg { width:22px; height:22px; }
+/* Convention → purple */
+#doc_conv + label .choice-icon { background:var(--purple-100); }
+#doc_conv + label .choice-icon svg { stroke:var(--purple); }
+#doc_conv:checked + label .choice-icon { background:var(--purple); }
+#doc_conv:checked + label .choice-icon svg { stroke:white; }
+/* Apprentissage → orange */
+#doc_app + label .choice-icon { background:var(--orange-50); }
+#doc_app + label .choice-icon svg { stroke:var(--orange); }
+#doc_app:checked + label .choice-icon { background:var(--orange); }
+#doc_app:checked + label .choice-icon svg { stroke:white; }
+/* Les deux → pink */
+#doc_both + label .choice-icon { background:var(--pink-50); }
+#doc_both + label .choice-icon svg { stroke:var(--pink); }
+#doc_both:checked + label .choice-icon { background:var(--pink); }
+#doc_both:checked + label .choice-icon svg { stroke:white; }
+
+.choice-text strong { display:block; font-size:15px; font-weight:700; color:var(--gray-900); margin-bottom:3px; }
+.choice-text span { font-size:13px; color:var(--gray-500); }
+
+.btn-start {
+  margin-top:28px; width:100%; height:52px;
+  background:var(--purple); color:white;
+  border:none; border-radius:var(--radius);
+  font-family:inherit; font-size:15px; font-weight:700;
+  cursor:pointer; transition:all 0.18s;
+  box-shadow: 0 4px 14px rgba(139,63,240,0.28);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn-start:hover { background:var(--purple-dark); transform:translateY(-1px); box-shadow:0 6px 18px rgba(139,63,240,0.36); }
+.btn-start svg { width:17px; height:17px; stroke:white; fill:none; }
+
+/* ── Form view ── */
+.form-container { max-width:860px; margin:0 auto; padding:36px 24px 80px; }
+
+.form-header { margin-bottom:32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.form-header h1 { font-size:22px; font-weight:800; color:var(--gray-900); letter-spacing:-0.3px; }
+.doc-badge {
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px;
+  background:var(--purple-100); color:var(--purple);
+}
+.btn-back {
+  background:none; border:none; font-family:inherit; font-size:13px;
+  color:var(--gray-500); cursor:pointer; display:flex; align-items:center; gap:5px;
+  padding:0; margin-bottom:16px; font-weight:500; transition:color 0.15s;
+}
+.btn-back:hover { color:var(--gray-800); }
+.btn-back svg { width:15px; height:15px; stroke:currentColor; fill:none; }
+
+/* Form layout — deux colonnes */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.form-grid.single { grid-template-columns:1fr; max-width:540px; margin:0 auto; }
+.section-block {
+  background:var(--white); border:1px solid var(--gray-200);
+  border-radius:14px; overflow:hidden;
+}
+.section-block.full { grid-column:1/-1; }
+
+.section-head {
+  padding:18px 24px 16px;
+  border-bottom:1px solid var(--gray-100);
+  display:flex; align-items:center; gap:10px;
+}
+.section-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.section-head h2 { font-size:14px; font-weight:700; color:var(--gray-900); letter-spacing:-0.1px; }
+
+.section-body { padding:20px 24px 24px; display:grid; gap:14px; }
+
+/* Fields */
+.field { display:flex; flex-direction:column; gap:5px; }
+.inner-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.inner-row.cols-1-2 { grid-template-columns:1fr 2fr; }
+.inner-row.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+
+label { font-size:12px; font-weight:600; color:var(--gray-600); letter-spacing:0.1px; }
+label .req { color:var(--purple); margin-left:1px; }
+label .opt { color:var(--gray-400); font-weight:400; margin-left:4px; }
+
+input, select, textarea {
+  width:100%; height:42px; padding:0 12px;
+  border:1.5px solid var(--gray-200); border-radius:8px;
+  font-family:inherit; font-size:13.5px; color:var(--gray-800);
+  background:var(--white); transition:all 0.15s; outline:none; appearance:none;
+}
+input::placeholder { color:var(--gray-300); }
+input:focus, select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(139,63,240,0.09); }
+input.err, select.err { border-color:var(--error); }
+select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239d92b0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center; padding-right:32px; cursor:pointer;
+}
+.field-error { font-size:11.5px; color:var(--error); font-weight:500; display:none; }
+.field-error.show { display:block; }
+
+/* Civility */
+.civility-row { display:flex; gap:8px; }
+.civ-opt { position:relative; }
+.civ-opt input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+.civ-opt label {
+  display:flex; align-items:center; justify-content:center;
+  width:64px; height:42px; border:1.5px solid var(--gray-200); border-radius:8px;
+  cursor:pointer; transition:all 0.15s; font-size:13px; font-weight:600; color:var(--gray-600);
+}
+.civ-opt label:hover { border-color:var(--purple); }
+.civ-opt input:checked + label { border-color:var(--purple); background:var(--purple); color:white; }
+
+/* Radio pills */
+.pills { display:flex; gap:7px; flex-wrap:wrap; }
+.pill { position:relative; }
+.pill input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+.pill label {
+  display:flex; align-items:center; height:36px; padding:0 14px;
+  border:1.5px solid var(--gray-200); border-radius:20px;
+  cursor:pointer; font-size:13px; font-weight:500; color:var(--gray-600); transition:all 0.15s;
+}
+.pill label:hover { border-color:var(--purple); color:var(--purple); }
+.pill input:checked + label { border-color:var(--purple); background:var(--purple); color:white; }
+
+/* Submit zone */
+.submit-zone {
+  grid-column:1/-1; display:flex; align-items:flex-start; gap:16px;
+  padding:20px 24px; background:var(--white);
+  border:1px solid var(--gray-200); border-radius:14px; margin-top:4px;
+}
+.cert-wrap { flex:1; }
+.cert-check { display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; }
+.cert-check input[type="checkbox"] { width:17px; height:17px; min-width:17px; accent-color:var(--purple); margin-top:2px; cursor:pointer; }
+.cert-check label { font-size:13px; color:var(--gray-600); font-weight:400; line-height:1.6; cursor:pointer; }
+.field-error.cert-err { margin-bottom:12px; }
+
+.btn-submit {
+  height:50px; padding:0 32px;
+  background:var(--green); color:white;
+  border:none; border-radius:var(--radius);
+  font-family:inherit; font-size:14px; font-weight:700;
+  cursor:pointer; transition:all 0.18s; white-space:nowrap;
+  box-shadow:0 4px 14px rgba(26,199,90,0.28);
+  display:flex; align-items:center; gap:8px;
+}
+.btn-submit:hover { background:#14a84a; transform:translateY(-1px); }
+.btn-submit svg { width:16px; height:16px; stroke:white; fill:none; }
+.btn-submit:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+/* Dots loader */
+.dots { display:inline-flex; gap:4px; }
+.dots span { width:5px; height:5px; border-radius:50%; background:white; animation:bounce 1.4s infinite ease-in-out; }
+.dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+/* ── Success ── */
+.success-container {
+  max-width:500px; margin:0 auto; padding:80px 24px;
+  text-align:center; animation:fadeUp 0.4s ease;
+}
+.success-icon {
+  width:72px; height:72px; border-radius:50%;
+  background:#d1fde0; display:flex; align-items:center; justify-content:center; margin:0 auto 24px;
+}
+.success-icon svg { width:36px; height:36px; stroke:var(--green); fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+.success-container h2 { font-size:22px; font-weight:800; color:var(--gray-900); margin-bottom:10px; }
+.success-container p { font-size:14px; color:var(--gray-500); line-height:1.7; }
+.success-ref { display:inline-block; background:var(--gray-100); padding:6px 18px; border-radius:20px; font-size:12px; font-weight:600; color:var(--gray-500); margin-top:20px; }
+
+/* ── Share link view ── */
+.share-container {
+  max-width:620px; margin:0 auto; padding:56px 24px 80px;
+  text-align:center;
+}
+.share-icon {
+  width:72px; height:72px; border-radius:50%;
+  background:var(--purple-100); display:flex; align-items:center; justify-content:center; margin:0 auto 24px;
+}
+.share-icon svg { width:34px; height:34px; stroke:var(--purple); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.share-container h2 { font-size:24px; font-weight:800; color:var(--gray-900); margin-bottom:10px; letter-spacing:-0.3px; }
+.share-container > p { font-size:14px; color:var(--gray-500); line-height:1.65; margin-bottom:28px; }
+
+.link-box {
+  display:flex; gap:8px; background:var(--white);
+  border:1.5px solid var(--gray-200); border-radius:var(--radius);
+  padding:6px; margin-bottom:14px; align-items:center;
+}
+.link-box input {
+  flex:1; height:42px; border:none; background:transparent;
+  font-family:inherit; font-size:13px; color:var(--gray-700); padding:0 10px;
+}
+.link-box input:focus { box-shadow:none; }
+.btn-copy {
+  height:42px; padding:0 18px;
+  background:var(--purple); color:white;
+  border:none; border-radius:8px;
+  font-family:inherit; font-size:13px; font-weight:700;
+  cursor:pointer; transition:all 0.18s; white-space:nowrap;
+  display:flex; align-items:center; gap:6px;
+}
+.btn-copy:hover { background:var(--purple-dark); }
+.btn-copy svg { width:15px; height:15px; stroke:white; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.btn-copy.copied { background:var(--green); }
+
+.share-actions {
+  display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px;
+}
+.btn-secondary {
+  height:44px; padding:0 20px;
+  background:var(--white); color:var(--gray-700);
+  border:1.5px solid var(--gray-200); border-radius:var(--radius);
+  font-family:inherit; font-size:13px; font-weight:600;
+  cursor:pointer; transition:all 0.18s;
+  display:inline-flex; align-items:center; gap:7px;
+}
+.btn-secondary:hover { border-color:var(--purple); color:var(--purple); }
+.btn-secondary svg { width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+.info-card {
+  background:var(--purple-50); border:1px solid var(--purple-100);
+  border-radius:12px; padding:18px 20px; margin-top:24px; text-align:left;
+  display:flex; gap:12px; align-items:flex-start;
+}
+.info-card svg { width:18px; height:18px; stroke:var(--purple); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; margin-top:2px; }
+.info-card p { font-size:13px; color:var(--gray-700); line-height:1.6; margin:0; }
+.info-card strong { color:var(--purple-dark); font-weight:700; }
+
+/* ── Recap (côté entreprise) ── */
+.recap-card {
+  background:var(--gray-50); border:1px solid var(--gray-200);
+  border-radius:12px; padding:18px 22px; margin-bottom:20px;
+}
+.recap-card h3 {
+  font-size:12px; font-weight:700; color:var(--gray-500);
+  text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;
+}
+.recap-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px 24px;
+}
+.recap-item { display:flex; flex-direction:column; gap:2px; }
+.recap-item .lbl { font-size:11px; color:var(--gray-400); font-weight:500; }
+.recap-item .val { font-size:13px; color:var(--gray-800); font-weight:600; }
+
+/* ── PDF Ready ── */
+.pdf-container {
+  max-width:520px; margin:0 auto; padding:64px 24px 80px;
+  text-align:center;
+}
+.pdf-icon {
+  width:84px; height:84px; border-radius:20px;
+  background:linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 26px; box-shadow:0 10px 30px rgba(139,63,240,0.3);
+}
+.pdf-icon svg { width:40px; height:40px; stroke:white; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.pdf-container h2 { font-size:24px; font-weight:800; color:var(--gray-900); margin-bottom:10px; letter-spacing:-0.3px; }
+.pdf-container p { font-size:14px; color:var(--gray-500); line-height:1.65; margin-bottom:28px; }
+.btn-download {
+  width:100%; max-width:320px; height:54px;
+  background:var(--green); color:white;
+  border:none; border-radius:var(--radius);
+  font-family:inherit; font-size:15px; font-weight:700;
+  cursor:pointer; transition:all 0.18s;
+  box-shadow:0 6px 20px rgba(26,199,90,0.32);
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  margin:0 auto;
+}
+.btn-download:hover { background:#14a84a; transform:translateY(-1px); box-shadow:0 8px 24px rgba(26,199,90,0.4); }
+.btn-download svg { width:18px; height:18px; stroke:white; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+.btn-download:disabled { opacity:0.6; cursor:wait; }
+
+/* ── Responsive ── */
+@media(max-width:680px){
+  .form-grid { grid-template-columns:1fr; }
+  .section-block.full { grid-column:1; }
+  .inner-row, .inner-row.cols-1-2, .inner-row.cols-3 { grid-template-columns:1fr; }
+  .submit-zone { flex-direction:column; }
+  .btn-submit { width:100%; justify-content:center; }
+  .recap-grid { grid-template-columns:1fr; }
+  .link-box { flex-direction:column; align-items:stretch; padding:8px; }
+  .btn-copy { width:100%; justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <img src="logo.png" alt="forma+" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <span class="logo-fallback">forma+</span>
+    </div>
+    <div class="header-right">Dossier sécurisé</div>
+  </div>
+</header>
+
+<!-- ── VUE 1 : Sélection ── -->
+<div class="view active" id="viewSelect">
+  <div class="select-container">
+    <h1>Quel document souhaitez-vous générer ?</h1>
+    <p>Sélectionnez le ou les documents nécessaires à votre dossier.</p>
+
+    <div class="choice-cards">
+      <div class="choice-card">
+        <input type="radio" name="docType" id="doc_conv" value="convention">
+        <label for="doc_conv">
+          <div class="choice-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <div class="choice-text">
+            <strong>Convention de formation</strong>
+            <span>Formation continue ou professionnelle</span>
+          </div>
+        </label>
+      </div>
+      <div class="choice-card">
+        <input type="radio" name="docType" id="doc_app" value="apprentissage">
+        <label for="doc_app">
+          <div class="choice-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+          <div class="choice-text">
+            <strong>Contrat d'apprentissage</strong>
+            <span>CERFA n°10103*14 — alternance</span>
+          </div>
+        </label>
+      </div>
+      <div class="choice-card">
+        <input type="radio" name="docType" id="doc_both" value="both">
+        <label for="doc_both">
+          <div class="choice-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div class="choice-text">
+            <strong>Les deux documents</strong>
+            <span>Convention + CERFA contrat d'apprentissage</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <button class="btn-start" onclick="startForm()">
+      Remplir le formulaire
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ── VUE 2 : Formulaire ── -->
+<div class="view" id="viewForm">
+  <div class="form-container">
+    <button class="btn-back" id="btnBack" onclick="goBack()">
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Modifier le choix
+    </button>
+    <div class="form-header">
+      <h1 id="formTitle">Informations du dossier</h1>
+      <div class="doc-badge" id="docBadge"></div>
+    </div>
+
+    <!-- Récap des infos de l'apprenti (visible côté entreprise) -->
+    <div class="recap-card" id="recapCard" style="display:none">
+      <h3>Informations transmises par l'entreprise</h3>
+      <div class="recap-grid" id="recapGrid"></div>
+    </div>
+
+    <div class="form-grid" id="formGrid">
+
+      <!-- Stagiaire -->
+      <div class="section-block">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--pink)"></div>
+          <h2>Stagiaire / Apprenti</h2>
+        </div>
+        <div class="section-body">
+          <div class="field">
+            <label>Civilité <span class="req">*</span></label>
+            <div class="civility-row">
+              <div class="civ-opt"><input type="radio" name="civilite" id="civ_m" value="M."><label for="civ_m">M.</label></div>
+              <div class="civ-opt"><input type="radio" name="civilite" id="civ_mme" value="Mme"><label for="civ_mme">Mme</label></div>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="nom">Nom <span class="req">*</span></label>
+              <input type="text" id="nom" placeholder="DUPONT" style="text-transform:uppercase">
+              <span class="field-error" id="err_nom">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="prenom">Prénom <span class="req">*</span></label>
+              <input type="text" id="prenom" placeholder="Jean">
+              <span class="field-error" id="err_prenom">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="dateNaissance">Date de naissance <span class="req">*</span></label>
+              <input type="date" id="dateNaissance">
+              <span class="field-error" id="err_dateNaissance">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="lieuNaissance">Lieu de naissance <span class="req">*</span></label>
+              <input type="text" id="lieuNaissance" placeholder="Paris (75)">
+              <span class="field-error" id="err_lieuNaissance">Obligatoire</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="nationalite">Nationalité <span class="req">*</span></label>
+            <input type="text" id="nationalite" value="Française">
+            <span class="field-error" id="err_nationalite">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="adresse">Adresse <span class="req">*</span></label>
+            <input type="text" id="adresse" placeholder="12 rue de la Paix">
+            <span class="field-error" id="err_adresse">Obligatoire</span>
+          </div>
+          <div class="inner-row cols-1-2">
+            <div class="field">
+              <label for="codePostal">Code postal <span class="req">*</span></label>
+              <input type="text" id="codePostal" placeholder="75001" maxlength="5">
+              <span class="field-error" id="err_codePostal">Invalide</span>
+            </div>
+            <div class="field">
+              <label for="ville">Ville <span class="req">*</span></label>
+              <input type="text" id="ville" placeholder="Paris">
+              <span class="field-error" id="err_ville">Obligatoire</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="req">*</span></label>
+            <input type="email" id="email" placeholder="jean.dupont@email.com">
+            <span class="field-error" id="err_email">Email invalide</span>
+          </div>
+          <div class="field">
+            <label for="telephone">Téléphone <span class="req">*</span></label>
+            <input type="tel" id="telephone" placeholder="06 00 00 00 00">
+            <span class="field-error" id="err_telephone">Invalide</span>
+          </div>
+          <div class="field">
+            <label for="niveauFormation">Niveau de formation <span class="req">*</span></label>
+            <select id="niveauFormation">
+              <option value="">-- Sélectionner --</option>
+              <option>Sans diplôme</option>
+              <option>CAP / BEP</option>
+              <option>Bac (niveau 4)</option>
+              <option>Bac+2 (niveau 5)</option>
+              <option>Bac+3 (niveau 6)</option>
+              <option>Bac+5 et plus (niveau 7/8)</option>
+            </select>
+            <span class="field-error" id="err_niveauFormation">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="dernierDiplome">Dernier diplôme obtenu <span class="opt">(optionnel)</span></label>
+            <input type="text" id="dernierDiplome" placeholder="Ex : BTS Management">
+          </div>
+        </div>
+      </div>
+
+      <!-- Formation -->
+      <div class="section-block" id="sectionFormation">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--green)"></div>
+          <h2>Formation</h2>
+        </div>
+        <div class="section-body">
+          <div class="field">
+            <label for="intitule">Intitulé de la formation <span class="req">*</span></label>
+            <input type="text" id="intitule" placeholder="Ex : BTS Gestion de la PME">
+            <span class="field-error" id="err_intitule">Obligatoire</span>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="diplomeVise">Diplôme / titre visé <span class="req">*</span></label>
+              <input type="text" id="diplomeVise" placeholder="BTS, Licence Pro...">
+              <span class="field-error" id="err_diplomeVise">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="codeRNCP">Code RNCP <span class="opt">(optionnel)</span></label>
+              <input type="text" id="codeRNCP" placeholder="RNCP 34825">
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="dateDebut">Date de début <span class="req">*</span></label>
+              <input type="date" id="dateDebut">
+              <span class="field-error" id="err_dateDebut">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="dateFin">Date de fin <span class="req">*</span></label>
+              <input type="date" id="dateFin">
+              <span class="field-error" id="err_dateFin">Invalide</span>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="duree">Durée (heures) <span class="req">*</span></label>
+              <input type="number" id="duree" placeholder="420" min="1">
+              <span class="field-error" id="err_duree">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="lieuForm">Lieu de formation <span class="req">*</span></label>
+              <input type="text" id="lieuForm" placeholder="Paris 11e">
+              <span class="field-error" id="err_lieuForm">Obligatoire</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Financement <span class="req">*</span></label>
+            <div class="pills">
+              <div class="pill"><input type="radio" name="financement" id="fin_opco" value="OPCO" onchange="toggleOPCO()"><label for="fin_opco">OPCO</label></div>
+              <div class="pill"><input type="radio" name="financement" id="fin_ent" value="Entreprise" onchange="toggleOPCO()"><label for="fin_ent">Entreprise</label></div>
+              <div class="pill"><input type="radio" name="financement" id="fin_cpf" value="CPF" onchange="toggleOPCO()"><label for="fin_cpf">CPF</label></div>
+              <div class="pill"><input type="radio" name="financement" id="fin_autre" value="Autre" onchange="toggleOPCO()"><label for="fin_autre">Autre</label></div>
+            </div>
+          </div>
+          <div class="field" id="opcoField" style="display:none">
+            <label for="nomOPCO">Nom de l'OPCO <span class="req">*</span></label>
+            <input type="text" id="nomOPCO" placeholder="ATLAS, OPCO 2i, AKTO...">
+            <span class="field-error" id="err_nomOPCO">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="cout">Coût total (€) <span class="req">*</span></label>
+            <input type="number" id="cout" placeholder="3500" min="0" step="0.01">
+            <span class="field-error" id="err_cout">Obligatoire</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employeur (conditionnel) -->
+      <div class="section-block full" id="sectionEmployeur" style="display:none">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--orange)"></div>
+          <h2>Employeur</h2>
+        </div>
+        <div class="section-body">
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="raisonSociale">Raison sociale <span class="req">*</span></label>
+              <input type="text" id="raisonSociale" placeholder="SAS Exemple">
+              <span class="field-error" id="err_raisonSociale">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="siret">SIRET <span class="req">*</span></label>
+              <input type="text" id="siret" placeholder="123 456 789 00012" maxlength="17">
+              <span class="field-error" id="err_siret">14 chiffres requis</span>
+            </div>
+            <div class="field">
+              <label for="codeNAF">Code NAF / APE <span class="req">*</span></label>
+              <input type="text" id="codeNAF" placeholder="6201Z" maxlength="5">
+              <span class="field-error" id="err_codeNAF">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label>Type d'employeur <span class="req">*</span></label>
+              <div class="pills">
+                <div class="pill"><input type="radio" name="typeEmployeur" id="emp_prive" value="Secteur privé"><label for="emp_prive">Privé</label></div>
+                <div class="pill"><input type="radio" name="typeEmployeur" id="emp_public" value="Secteur public"><label for="emp_public">Public</label></div>
+                <div class="pill"><input type="radio" name="typeEmployeur" id="emp_autre" value="Autre"><label for="emp_autre">Autre</label></div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="effectif">Effectif <span class="req">*</span></label>
+              <select id="effectif">
+                <option value="">-- Sélectionner --</option>
+                <option>1 à 9 salariés</option>
+                <option>10 à 49 salariés</option>
+                <option>50 à 249 salariés</option>
+                <option>250 à 999 salariés</option>
+                <option>1000 salariés et plus</option>
+              </select>
+              <span class="field-error" id="err_effectif">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="adresseEmp">Adresse <span class="req">*</span></label>
+              <input type="text" id="adresseEmp" placeholder="1 avenue de la République">
+              <span class="field-error" id="err_adresseEmp">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="cpEmp">Code postal <span class="req">*</span></label>
+              <input type="text" id="cpEmp" placeholder="75011" maxlength="5">
+              <span class="field-error" id="err_cpEmp">Invalide</span>
+            </div>
+            <div class="field">
+              <label for="villeEmp">Ville <span class="req">*</span></label>
+              <input type="text" id="villeEmp" placeholder="Paris">
+              <span class="field-error" id="err_villeEmp">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="emailEmp">Email employeur <span class="req">*</span></label>
+              <input type="email" id="emailEmp" placeholder="rh@entreprise.fr">
+              <span class="field-error" id="err_emailEmp">Invalide</span>
+            </div>
+          </div>
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="nomResp">Nom responsable <span class="req">*</span></label>
+              <input type="text" id="nomResp" placeholder="Martin">
+              <span class="field-error" id="err_nomResp">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="prenomResp">Prénom <span class="req">*</span></label>
+              <input type="text" id="prenomResp" placeholder="Sophie">
+              <span class="field-error" id="err_prenomResp">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="telEmp">Téléphone <span class="req">*</span></label>
+              <input type="tel" id="telEmp" placeholder="01 00 00 00 00">
+              <span class="field-error" id="err_telEmp">Invalide</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maître d'apprentissage (conditionnel) -->
+      <div class="section-block full" id="sectionMaitre" style="display:none">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--purple)"></div>
+          <h2>Maître d'apprentissage</h2>
+        </div>
+        <div class="section-body">
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="nomMaitre">Nom <span class="req">*</span></label>
+              <input type="text" id="nomMaitre" placeholder="Durand">
+              <span class="field-error" id="err_nomMaitre">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="prenomMaitre">Prénom <span class="req">*</span></label>
+              <input type="text" id="prenomMaitre" placeholder="Pierre">
+              <span class="field-error" id="err_prenomMaitre">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="dnMaitre">Date de naissance <span class="req">*</span></label>
+              <input type="date" id="dnMaitre">
+              <span class="field-error" id="err_dnMaitre">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="diplomeMaitre">Diplôme / qualification <span class="req">*</span></label>
+              <input type="text" id="diplomeMaitre" placeholder="BTS + 2 ans d'expérience">
+              <span class="field-error" id="err_diplomeMaitre">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="dateDebutContrat">Date de début du contrat <span class="req">*</span></label>
+              <input type="date" id="dateDebutContrat">
+              <span class="field-error" id="err_dateDebutContrat">Obligatoire</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="typeContrat">Type de contrat <span class="req">*</span></label>
+            <select id="typeContrat">
+              <option value="">-- Sélectionner --</option>
+              <option>Initial</option>
+              <option>Succession</option>
+              <option>Rupture / Nouveau contrat</option>
+            </select>
+            <span class="field-error" id="err_typeContrat">Obligatoire</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone envoi -->
+      <div class="submit-zone">
+        <div class="cert-wrap">
+          <div class="cert-check">
+            <input type="checkbox" id="certCheck">
+            <label for="certCheck" id="certLabel">Je certifie que toutes les informations renseignées sont exactes.</label>
+          </div>
+          <span class="field-error cert-err" id="err_cert">Veuillez cocher cette case</span>
+        </div>
+        <button class="btn-submit" onclick="submitForm()" id="submitBtn">
+          <svg id="submitIcon" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="submitLabel">Continuer</span>
+        </button>
+      </div>
+
+    </div><!-- /form-grid -->
+  </div>
+</div>
+
+<!-- ── VUE 3 : Partage du lien (côté apprenti après remplissage) ── -->
+<div class="view" id="viewShare">
+  <div class="share-container">
+    <div class="share-icon">
+      <svg viewBox="0 0 24 24">
+        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+    </div>
+    <h2>Lien à transmettre à l'apprenti(e)</h2>
+    <p>Vos informations ont bien été enregistrées. Renseignez l'email de l'apprenti(e) ci-dessous — il/elle recevra un lien pour compléter sa partie. Le PDF sera généré automatiquement après sa saisie.</p>
+
+    <div class="field" style="max-width:460px;margin:0 auto 20px;text-align:left">
+      <label for="apprentiEmailInput">Email de l'apprenti(e)</label>
+      <input type="email" id="apprentiEmailInput" placeholder="apprenti@email.com" oninput="updateMailtoLink()">
+    </div>
+
+    <div class="link-box">
+      <input type="text" id="shareUrl" readonly onclick="this.select()">
+      <button class="btn-copy" id="btnCopy" onclick="copyShareLink()">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copier</span>
+      </button>
+    </div>
+
+    <div class="share-actions">
+      <a class="btn-secondary" id="mailtoLink" href="#">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Envoyer par email
+      </a>
+    </div>
+
+    <div class="info-card">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <p><strong>100% privé :</strong> aucune donnée n'est envoyée à un serveur. Vos informations sont intégrées directement dans le lien. Seul(e) l'apprenti(e) qui reçoit le lien peut y accéder.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── VUE 4 : PDF prêt ── -->
+<div class="view" id="viewPDFReady">
+  <div class="pdf-container">
+    <div class="pdf-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <polyline points="9 15 12 12 15 15"/>
+      </svg>
+    </div>
+    <h2 id="pdfTitle">Votre PDF est prêt !</h2>
+    <p id="pdfDesc">Toutes les informations ont été renseignées. Téléchargez votre document <strong>modifiable</strong> — vous pourrez encore corriger n'importe quel champ dans Adobe Reader ou tout autre lecteur PDF.</p>
+    <button class="btn-download" id="btnDownload" onclick="downloadPDF()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Télécharger le PDF</span>
+    </button>
+    <div class="share-actions" style="margin-top:24px">
+      <button class="btn-secondary" onclick="restartFlow()">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Nouveau dossier
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   forma+ — Flux apprenti → entreprise → PDF modifiable
+   ============================================================
+   Le lien partagé contient toutes les données de l'apprenti
+   encodées en base64 dans le hash URL (#e=...). Aucune donnée
+   n'est envoyée à un serveur, tout reste côté client.
+============================================================ */
+
+const $ = id => document.getElementById(id);
+const getVal = id => { const e=$(id); return e ? e.value.trim() : ''; };
+const setVal = (id, v) => { const e=$(id); if(e && v!=null) e.value = v; };
+const getRadio = name => { const e=document.querySelector(`input[name="${name}"]:checked`); return e ? e.value : ''; };
+const setRadio = (name, v) => { const e=document.querySelector(`input[name="${name}"][value="${v}"]`); if(e) e.checked = true; };
+
+/* ------- État global ------- */
+const STATE = {
+  role: 'apprenti',  // 'apprenti' | 'entreprise'
+  docType: '',       // 'convention' | 'apprentissage' | 'both'
+  apprentiData: null,
+  entrepriseData: null,
+  shareUrl: '',
+};
+
+/* ------- Encodage / décodage URL ------- */
+function encodeData(obj) {
+  const json = JSON.stringify(obj);
+  // btoa avec support unicode (encodeURIComponent + unescape)
+  return btoa(unescape(encodeURIComponent(json)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodeData(str) {
+  try {
+    let s = str.replace(/-/g,'+').replace(/_/g,'/');
+    while (s.length % 4) s += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(s))));
+  } catch(e) { console.error('decode failed', e); return null; }
+}
+
+/* ------- Navigation ------- */
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function needsEntreprise() { return ['apprentissage','both'].includes(STATE.docType); }
+
+/* ============================================================
+   Sélection du type de document (côté apprenti)
+============================================================ */
+function startForm() {
+  const type = getRadio('docType');
+  if (!type) { alert('Veuillez sélectionner un type de document.'); return; }
+  STATE.docType = type;
+  STATE.role = 'entreprise';
+  renderForm();
+}
+
+function goBack() {
+  if (STATE.role === 'apprenti') { return; }
+  showView('viewSelect');
+}
+
+/* ============================================================
+   Affichage du formulaire selon le rôle
+============================================================ */
+function renderForm() {
+  const labels = {
+    convention:'Convention de formation',
+    apprentissage:"Contrat d'apprentissage",
+    both:'Convention + Contrat d\'apprentissage'
+  };
+  $('docBadge').textContent = labels[STATE.docType] || '';
+
+  const isApprenti = STATE.role === 'apprenti';
+  const isEntreprise = STATE.role === 'entreprise';
+
+  document.querySelectorAll('.section-block').forEach(s => s.style.display = '');
+  const empSec  = $('sectionEmployeur');
+  const maiSec  = $('sectionMaitre');
+  const formSec = $('sectionFormation');
+  const formGrid = $('formGrid');
+
+  if (isEntreprise) {
+    // Entreprise remplit en premier : formation + employeur + maître
+    document.querySelectorAll('.section-block').forEach(s => {
+      if (!['sectionFormation','sectionEmployeur','sectionMaitre'].includes(s.id)) s.style.display = 'none';
+    });
+    formSec.style.display = 'block';
+    formSec.classList.add('full');
+    empSec.style.display  = 'block';
+    maiSec.style.display  = 'block';
+    formGrid.classList.remove('single');
+    $('formTitle').textContent = "Informations de l'entreprise";
+    $('certLabel').textContent = "Je certifie que les informations renseignées sont exactes. Le lien généré sera transmis à l'apprenti(e) pour qu'il/elle complète sa partie.";
+    $('submitLabel').textContent = "Générer le lien pour l'apprenti(e)";
+    $('recapCard').style.display = 'none';
+    $('btnBack').style.display = '';
+  } else if (isApprenti) {
+    // Apprenti arrive via le lien : uniquement sa section personnelle
+    empSec.style.display  = 'none';
+    maiSec.style.display  = 'none';
+    formSec.style.display = 'none';
+    formSec.classList.remove('full');
+    formGrid.classList.add('single');
+    $('formTitle').textContent = 'Vos informations (apprenti(e))';
+    $('certLabel').textContent = "Je certifie que mes informations sont exactes. Le PDF sera généré après validation.";
+    $('submitLabel').textContent = 'Générer le PDF';
+    $('recapCard').style.display = 'block';
+    $('btnBack').style.display = 'none';
+    fillRecap();
+  }
+
+  showView('viewForm');
+}
+
+/* ------- Recap entreprise (affiché à l'apprenti) ------- */
+function fillRecap() {
+  if (!STATE.entrepriseData) return;
+  const d = STATE.entrepriseData;
+  const items = [
+    ['Entreprise', d.raisonSociale||'—'],
+    ['Formation', d.intitule||'—'],
+    ['Diplôme visé', d.diplomeVise||'—'],
+    ['Du / Au', `${d.dateDebut||'—'} → ${d.dateFin||'—'}`],
+    ['Durée', d.duree ? `${d.duree} h` : '—'],
+    ['Maître d\'apprentissage', `${d.prenomMaitre||''} ${(d.nomMaitre||'').toUpperCase()}`.trim()||'—'],
+  ];
+  $('recapGrid').innerHTML = items.map(([l,v]) =>
+    `<div class="recap-item"><span class="lbl">${l}</span><span class="val">${v||'—'}</span></div>`
+  ).join('');
+}
+
+/* ============================================================
+   Champ OPCO conditionnel
+============================================================ */
+function toggleOPCO() {
+  $('opcoField').style.display = getRadio('financement') === 'OPCO' ? 'flex' : 'none';
+}
+
+/* ============================================================
+   Auto-format SIRET + reset erreurs
+============================================================ */
+$('siret').addEventListener('input', function() {
+  // Format SIRET officiel : SIREN (3+3+3) + NIC (5)  →  "XXX XXX XXX XXXXX"
+  const v = this.value.replace(/\D/g,'').substring(0,14);
+  let out = v.slice(0,3);
+  if (v.length > 3) out += ' ' + v.slice(3,6);
+  if (v.length > 6) out += ' ' + v.slice(6,9);
+  if (v.length > 9) out += ' ' + v.slice(9,14);
+  this.value = out;
+});
+document.addEventListener('input', e => {
+  const err = $(`err_${e.target.id}`);
+  if (err && err.classList.contains('show') && e.target.value.trim()) {
+    err.classList.remove('show'); e.target.classList.remove('err');
+  }
+});
+
+/* ============================================================
+   Validation
+============================================================ */
+const validEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+const validSiret = s => /^\d{14}$/.test(s.replace(/\s/g,''));
+const validCP = c => /^\d{5}$/.test(c);
+
+function showErr(id, show) {
+  const err=$(`err_${id}`); const inp=$(id);
+  if(err) err.classList.toggle('show', show);
+  if(inp) inp.classList.toggle('err', show);
+}
+function req(ids) {
+  let ok = true;
+  ids.forEach(id => { const v=getVal(id); showErr(id,!v); if(!v) ok=false; });
+  return ok;
+}
+
+function validateApprenti() {
+  let ok = true;
+  if (!req(['nom','prenom','dateNaissance','lieuNaissance','nationalite','adresse','codePostal','ville','email','telephone','niveauFormation'])) ok=false;
+  if (getVal('email') && !validEmail(getVal('email'))) { showErr('email',true); ok=false; }
+  if (getVal('codePostal') && !validCP(getVal('codePostal'))) { showErr('codePostal',true); ok=false; }
+  if (!getRadio('civilite')) { alert('Veuillez sélectionner une civilité.'); ok=false; }
+  return ok;
+}
+
+function validateEntreprise() {
+  let ok = true;
+  // Formation (déplacée côté entreprise pour apprentissage/both)
+  if (!req(['intitule','diplomeVise','dateDebut','dateFin','duree','lieuForm','cout'])) ok=false;
+  const d1=new Date(getVal('dateDebut')), d2=new Date(getVal('dateFin'));
+  if (getVal('dateDebut') && getVal('dateFin') && d2<=d1) { showErr('dateFin',true); ok=false; }
+  if (!getRadio('financement')) { alert('Veuillez sélectionner un mode de financement.'); ok=false; }
+  else if (getRadio('financement')==='OPCO' && !getVal('nomOPCO')) { showErr('nomOPCO',true); ok=false; }
+  // Employeur
+  if (!req(['raisonSociale','siret','codeNAF','effectif','adresseEmp','cpEmp','villeEmp','nomResp','prenomResp','emailEmp','telEmp'])) ok=false;
+  if (getVal('siret') && !validSiret(getVal('siret'))) { showErr('siret',true); ok=false; }
+  if (getVal('emailEmp') && !validEmail(getVal('emailEmp'))) { showErr('emailEmp',true); ok=false; }
+  if (getVal('cpEmp') && !validCP(getVal('cpEmp'))) { showErr('cpEmp',true); ok=false; }
+  if (!getRadio('typeEmployeur')) { alert("Veuillez sélectionner le type d'employeur."); ok=false; }
+  if (!req(['nomMaitre','prenomMaitre','dnMaitre','diplomeMaitre','dateDebutContrat','typeContrat'])) ok=false;
+  return ok;
+}
+
+/* ============================================================
+   Collecte des données du formulaire
+============================================================ */
+function collectApprentiData() {
+  return {
+    docType: STATE.docType,
+    civilite: getRadio('civilite'),
+    nom: getVal('nom'),
+    prenom: getVal('prenom'),
+    dateNaissance: getVal('dateNaissance'),
+    lieuNaissance: getVal('lieuNaissance'),
+    nationalite: getVal('nationalite'),
+    adresse: getVal('adresse'),
+    codePostal: getVal('codePostal'),
+    ville: getVal('ville'),
+    email: getVal('email'),
+    telephone: getVal('telephone'),
+    niveauFormation: getVal('niveauFormation'),
+    dernierDiplome: getVal('dernierDiplome'),
+  };
+}
+
+function collectEntrepriseData() {
+  return {
+    // Formation (remplie par l'entreprise pour apprentissage/both)
+    intitule: getVal('intitule'),
+    diplomeVise: getVal('diplomeVise'),
+    codeRNCP: getVal('codeRNCP'),
+    dateDebut: getVal('dateDebut'),
+    dateFin: getVal('dateFin'),
+    duree: getVal('duree'),
+    lieuForm: getVal('lieuForm'),
+    financement: getRadio('financement'),
+    nomOPCO: getVal('nomOPCO'),
+    cout: getVal('cout'),
+    // Employeur
+    raisonSociale: getVal('raisonSociale'),
+    siret: getVal('siret'),
+    codeNAF: getVal('codeNAF'),
+    typeEmployeur: getRadio('typeEmployeur'),
+    effectif: getVal('effectif'),
+    adresseEmp: getVal('adresseEmp'),
+    cpEmp: getVal('cpEmp'),
+    villeEmp: getVal('villeEmp'),
+    emailEmp: getVal('emailEmp'),
+    nomResp: getVal('nomResp'),
+    prenomResp: getVal('prenomResp'),
+    telEmp: getVal('telEmp'),
+    // Maître d'apprentissage
+    nomMaitre: getVal('nomMaitre'),
+    prenomMaitre: getVal('prenomMaitre'),
+    dnMaitre: getVal('dnMaitre'),
+    diplomeMaitre: getVal('diplomeMaitre'),
+    dateDebutContrat: getVal('dateDebutContrat'),
+    typeContrat: getVal('typeContrat'),
+  };
+}
+
+/* ============================================================
+   Submit — comportement selon rôle et type de document
+============================================================ */
+function submitForm() {
+  const cert = $('certCheck'); const errCert = $('err_cert');
+  if (!cert.checked) { errCert.classList.add('show'); return; }
+  errCert.classList.remove('show');
+
+  if (STATE.role === 'entreprise') {
+    if (!validateEntreprise()) return;
+    STATE.entrepriseData = collectEntrepriseData();
+    buildShareLink();
+    showView('viewShare');
+  } else {
+    // Apprenti arrive via le lien → génère le PDF
+    if (!validateApprenti()) return;
+    STATE.apprentiData = collectApprentiData();
+    goToPDF();
+  }
+}
+
+/* ============================================================
+   Génération + affichage du lien à partager
+============================================================ */
+function buildShareLink() {
+  const payload = { v:1, role:'apprenti', data: STATE.entrepriseData };
+  const encoded = encodeData(payload);
+  const base = window.location.href.split('#')[0];
+  STATE.shareUrl = `${base}#e=${encoded}`;
+  $('shareUrl').value = STATE.shareUrl;
+  updateMailtoLink();
+}
+
+function updateMailtoLink() {
+  const email = ($('apprentiEmailInput') && $('apprentiEmailInput').value.trim()) || '';
+  const subject = encodeURIComponent("Contrat d'apprentissage — votre partie à compléter");
+  const body = encodeURIComponent(
+    `Bonjour,\n\nL'entreprise a rempli sa partie du contrat d'apprentissage. Veuillez compléter vos informations personnelles via ce lien :\n\n${STATE.shareUrl}\n\nLe PDF sera généré automatiquement après votre saisie.\n\nMerci !`
+  );
+  $('mailtoLink').href = `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+async function copyShareLink() {
+  const btn = $('btnCopy');
+  const span = btn.querySelector('span');
+  try {
+    await navigator.clipboard.writeText(STATE.shareUrl);
+    btn.classList.add('copied');
+    span.textContent = 'Copié !';
+    setTimeout(() => { btn.classList.remove('copied'); span.textContent = 'Copier'; }, 2000);
+  } catch(e) {
+    // Fallback
+    const inp = $('shareUrl'); inp.select(); document.execCommand('copy');
+    span.textContent = 'Copié !';
+    setTimeout(() => { span.textContent = 'Copier'; }, 2000);
+  }
+}
+
+/* Aperçu local du formulaire entreprise (utile pour test) */
+function openCompanyPreview() {
+  window.location.href = STATE.shareUrl;
+  setTimeout(() => window.location.reload(), 50);
+}
+
+/* ============================================================
+   Détection du rôle au chargement (hash URL)
+============================================================ */
+function detectRoleFromUrl() {
+  const hash = window.location.hash.replace(/^#/,'');
+  if (!hash) return false;
+  const params = new URLSearchParams(hash);
+  const enc = params.get('e');
+  if (!enc) return false;
+  const payload = decodeData(enc);
+  if (!payload || !payload.data) return false;
+  STATE.role = 'apprenti';
+  STATE.docType = payload.data.docType || 'apprentissage';
+  STATE.entrepriseData = payload.data;
+  renderForm();
+  return true;
+}
+
+/* ============================================================
+   Reset / nouveau dossier
+============================================================ */
+function restartFlow() {
+  STATE.role = 'entreprise';
+  STATE.docType = '';
+  STATE.apprentiData = null;
+  STATE.entrepriseData = null;
+  STATE.shareUrl = '';
+  // Nettoyer formulaire
+  document.querySelectorAll('input, select').forEach(el => {
+    if (el.type === 'radio' || el.type === 'checkbox') el.checked = false;
+    else el.value = '';
+  });
+  setVal('nationalite', 'Française');
+  history.replaceState(null, '', window.location.pathname);
+  showView('viewSelect');
+}
+
+/* ============================================================
+   PDF — Génération modifiable avec pdf-lib
+   - Pour les contrats d'apprentissage : on remplit le VRAI CERFA
+     officiel n°10103*14 (encodé en base64 dans cerfa_template.js).
+   - Pour la convention seule : on génère un PDF stylé maison.
+============================================================ */
+let _pdfBytes = null;
+
+async function goToPDF() {
+  showView('viewPDFReady');
+  $('btnDownload').disabled = true;
+  $('btnDownload').querySelector('span').textContent = 'Génération en cours…';
+  try {
+    const isCerfa = ['apprentissage','both'].includes(STATE.docType);
+    _pdfBytes = isCerfa ? await buildOfficialCerfa() : await buildPDF();
+    if (isCerfa) {
+      $('pdfTitle').textContent = 'Votre CERFA officiel est prêt !';
+      $('pdfDesc').innerHTML = "Le formulaire <strong>CERFA n°10103*14</strong> (Contrat d'apprentissage) a été pré-rempli avec vos informations. Le document reste <strong>modifiable</strong> — tous les champs restent éditables dans Adobe Reader ou tout autre lecteur PDF.";
+    } else {
+      $('pdfTitle').textContent = 'Votre PDF est prêt !';
+      $('pdfDesc').innerHTML = "Toutes les informations ont été renseignées. Téléchargez votre document <strong>modifiable</strong> — vous pourrez encore corriger n'importe quel champ dans Adobe Reader ou tout autre lecteur PDF.";
+    }
+    $('btnDownload').disabled = false;
+    $('btnDownload').querySelector('span').textContent = 'Télécharger le PDF';
+  } catch(err) {
+    console.error(err);
+    alert('Erreur lors de la génération du PDF : ' + err.message);
+    $('btnDownload').querySelector('span').textContent = 'Erreur — réessayer';
+    $('btnDownload').disabled = false;
+  }
+}
+
+/* ============================================================
+   Remplissage du CERFA officiel n°10103*14
+============================================================ */
+
+// Convertit la base64 en Uint8Array (pour pdf-lib)
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+// Sépare "12 rue de la Paix" en { num: "12", voie: "rue de la Paix" }
+function splitAddr(s) {
+  if (!s) return { num: '', voie: '' };
+  const m = s.match(/^\s*(\d+\s*(?:bis|ter|quater)?)\s+(.+)$/i);
+  if (m) return { num: m[1].trim(), voie: m[2].trim() };
+  return { num: '', voie: s.trim() };
+}
+
+// Décompose "YYYY-MM-DD" en { jj, mm, aaaa }
+function splitDate(s) {
+  if (!s) return null;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return { aaaa: m[1], mm: m[2], jj: m[3] };
+}
+
+function todayStr() {
+  const d = new Date();
+  const pad = n => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+/* Mapping des champs PDF officiels vers nos données.
+   Les noms exacts sont ceux retournés par form.getFields() (avec accents). */
+function getCerfaMapping(A, E) {
+  const adrApp = splitAddr(A.adresse);
+  const adrEmp = splitAddr(E.adresseEmp);
+  const today = todayStr();
+
+  // Convertit le code postal + ville en un département à 2 chiffres si possible
+  // (uniquement pour le lieu de naissance — on utilise la ville comme valeur)
+  const deptNaissance = ''; // non collecté
+
+  return {
+    // ==== TEXTES ====
+    texts: {
+      // --- EMPLOYEUR ---
+      'Zone de texte 8':    E.raisonSociale,                                // Nom / dénomination
+      'Zone de texte 8_2':  (E.siret || '').replace(/\s/g, ''),             // N° SIRET (14 chiffres)
+      'Zone de texte 8_14': adrEmp.num,                                     // N° de voie
+      'Zone de texte 8_13': adrEmp.voie,                                    // Nom de voie
+      'Zone de texte 8_7':  E.codeNAF,                                      // Code APE/NAF
+      'Zone de texte 8_9':  E.cpEmp,                                        // Code postal
+      'Zone de texte 8_10': E.villeEmp,                                     // Commune
+      'Zone de texte 8_5':  E.effectif,                                     // Effectif total
+      'Zone de texte 8_11': E.telEmp,                                       // Téléphone
+      'Zone de texte 8_12': E.emailEmp,                                     // Courriel
+
+      // --- APPRENTI ---
+      'Zone de texte 8_15': (A.nom || '').toUpperCase(),                    // Nom de naissance
+      'Zone de texte 8_16': (A.nom || '').toUpperCase(),                    // Nom d'usage
+      'Zone de texte 8_17': A.prenom,                                       // Premier prénom
+      'Zone de texte 8_27': A.lieuNaissance,                                // Commune de naissance
+      'Zone de texte 8_26': deptNaissance,                                  // Département naissance
+      'Zone de texte 8_19': adrApp.num,
+      'Zone de texte 8_20': adrApp.voie,
+      'Zone de texte 8_22': A.codePostal,
+      'Zone de texte 8_23': A.ville,
+      'Zone de texte 8_24': A.telephone,
+      'Zone de texte 8_25': A.email,
+      'Zone de texte 8_31': A.dernierDiplome,                               // Intitulé du dernier diplôme préparé
+
+      // --- MAÎTRE D'APPRENTISSAGE 1 ---
+      'Zone de texte 8_42': (E.nomMaitre || '').toUpperCase(),
+      'Zone de texte 8_43': E.prenomMaitre,
+      'Zone de texte 8_45': E.diplomeMaitre,                                // Emploi occupé
+      'Zone de texte 8_50': E.diplomeMaitre,                                // Diplôme le plus élevé
+
+      // --- DURÉE DU TRAVAIL ---
+      'Zone de texte 8_68': '35',                                           // Heures/semaine
+      'Zone de texte 8_69': '0',                                            // Minutes
+
+      // --- FORMATION / CFA ---
+      'Zone de texte 8_99':  E.lieuForm,                                    // Dénomination CFA responsable
+      'Zone de texte 8_100': E.intitule,                                    // Intitulé précis
+      'Zone de texte 8_76':  E.codeRNCP,                                    // Code RNCP
+      'Zone de texte 8_80':  E.lieuForm,                                    // Voie CFA (approximatif)
+      'Zone de texte 8_78':  E.lieuForm,                                    // Commune CFA (approximatif)
+      'Zone de texte 21_80': E.duree,                                       // Durée totale en heures
+
+      // --- LIEU DE FORMATION PRINCIPAL ---
+      'Zone de texte 8_101': E.lieuForm,                                    // Dénomination
+
+      // --- SIGNATURE ---
+      'Zone de texte 8_90':  E.villeEmp,                                    // Fait à
+
+      // --- OPCO ---
+      'Zone de texte 8_91':  E.nomOPCO,                                     // Nom de l'organisme
+    },
+
+    // ==== DATES (chacune en 3 champs : JJ / MM / AAAA) ====
+    dates: [
+      // Date de naissance apprenti
+      { src: A.dateNaissance,         fields: ['Zone de texte 21_7','Zone de texte 21_8','Zone de texte 21_9'] },
+      // Date de naissance maître d'apprentissage 1
+      { src: E.dnMaitre,              fields: ['Zone de texte 21_4','Zone de texte 21_5','Zone de texte 21_6'] },
+      // Date de signature / conclusion du présent contrat
+      { src: today,                   fields: ['Zone de texte 21_16','Zone de texte 21_17','Zone de texte 21_18'] },
+      // Date de début d'exécution du contrat
+      { src: E.dateDebutContrat || E.dateDebut, fields: ['Zone de texte 21_19','Zone de texte 21_20','Zone de texte 21_21'] },
+      // Date de début de la formation pratique chez l'employeur
+      { src: E.dateDebutContrat || E.dateDebut, fields: ['Zone de texte 21_22','Zone de texte 21_23','Zone de texte 21_24'] },
+      // Date de fin du contrat
+      { src: E.dateFin,               fields: ['Zone de texte 21_10','Zone de texte 21_11','Zone de texte 21_12'] },
+      // Date de début de formation en CFA
+      { src: E.dateDebut,             fields: ['Zone de texte 21_25','Zone de texte 21_26','Zone de texte 21_27'] },
+      // Date prévue de fin des épreuves
+      { src: E.dateFin,               fields: ['Zone de texte 21_28','Zone de texte 21_29','Zone de texte 21_30'] },
+    ],
+
+    // ==== CASES À COCHER ====
+    // Noms PDF : pdf-lib retourne le nom brut avec « #C3#A0 » à la place de « à ».
+    checks: {
+      'Case #C3#A0 cocher 1': E.typeEmployeur === 'Secteur privé',
+      'Case #C3#A0 cocher 2': E.typeEmployeur === 'Secteur public',
+      'Case #C3#A0 cocher 3': A.civilite === 'M.',
+      'Case #C3#A0 cocher 4': A.civilite === 'Mme',
+      'Case #C3#A0 cocher 6': true, // L'employeur atteste : maître d'apprentissage répond aux critères
+      'Case #C3#A0 cocher 8': true, // L'employeur atteste : pièces justificatives
+    },
+  };
+}
+
+async function buildOfficialCerfa() {
+  if (!window.CERFA_PDF_B64) {
+    throw new Error("Le modèle CERFA n'a pas pu être chargé (cerfa_template.js manquant).");
+  }
+  const { PDFDocument } = PDFLib;
+  const bytes = b64ToBytes(window.CERFA_PDF_B64);
+  const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const form = pdf.getForm();
+
+  const A = STATE.apprentiData || {};
+  const E = STATE.entrepriseData || {};
+  const map = getCerfaMapping(A, E);
+
+  // Helper : tente de récupérer un champ par nom (gère les noms encodés)
+  const tryField = (name) => {
+    try { return form.getField(name); } catch { return null; }
+  };
+
+  // Texte
+  for (const [name, val] of Object.entries(map.texts)) {
+    if (!val) continue;
+    const f = tryField(name);
+    if (f && f.setText) {
+      try { f.setText(String(val)); }
+      catch (e) { console.warn('setText échec pour', name, e.message); }
+    }
+  }
+
+  // Dates (split JJ / MM / AAAA)
+  for (const d of map.dates) {
+    const parts = splitDate(d.src);
+    if (!parts) continue;
+    const [fJJ, fMM, fAAAA] = d.fields.map(tryField);
+    if (fJJ && fJJ.setText) try { fJJ.setText(parts.jj); } catch {}
+    if (fMM && fMM.setText) try { fMM.setText(parts.mm); } catch {}
+    if (fAAAA && fAAAA.setText) try { fAAAA.setText(parts.aaaa); } catch {}
+  }
+
+  // Cases à cocher
+  for (const [name, shouldCheck] of Object.entries(map.checks)) {
+    if (!shouldCheck) continue;
+    const f = tryField(name);
+    if (f && f.check) {
+      try { f.check(); } catch (e) { console.warn('check échec pour', name, e.message); }
+    }
+  }
+
+  // Génère les apparences pour que les valeurs soient visibles immédiatement
+  try { form.updateFieldAppearances(); } catch {}
+
+  return await pdf.save({ updateFieldAppearances: true });
+}
+
+function downloadPDF() {
+  if (!_pdfBytes) return;
+  const blob = new Blob([_pdfBytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const label = STATE.docType === 'convention' ? 'convention'
+              : STATE.docType === 'both'        ? 'cerfa-10103-14_contrat-apprentissage'
+              :                                   'cerfa-10103-14_contrat-apprentissage';
+  const apprenti = STATE.apprentiData || {};
+  const name = `${label}_${(apprenti.nom||'dossier').toLowerCase()}_${(apprenti.prenom||'').toLowerCase()}.pdf`.replace(/\s+/g,'-');
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ---------- Construction du PDF ---------- */
+async function buildPDF() {
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  pdfDoc.setTitle("forma+ — " + (STATE.docType === 'convention' ? 'Convention de formation' : "Contrat d'apprentissage"));
+  pdfDoc.setAuthor('forma+');
+  pdfDoc.setProducer('forma+');
+
+  const A = STATE.apprentiData || {};
+  const E = STATE.entrepriseData || {};
+  const titleMap = {
+    convention: 'CONVENTION DE FORMATION PROFESSIONNELLE',
+    apprentissage: "CONTRAT D'APPRENTISSAGE — CERFA n°10103*09",
+    both: "CONTRAT D'APPRENTISSAGE & CONVENTION DE FORMATION"
+  };
+
+  // ===== Page principale =====
+  const page = pdfDoc.addPage([595, 842]); // A4
+  const W = 595, H = 842;
+  const M = 40;
+  let y = H - M;
+
+  // Bandeau d'en-tête
+  page.drawRectangle({ x:0, y:H-70, width:W, height:70, color: rgb(0.545, 0.247, 0.941) });
+  page.drawText('forma+', { x: M, y: H-44, size: 22, font: helvBold, color: rgb(1,1,1) });
+  page.drawText(titleMap[STATE.docType] || 'Dossier', { x: M, y: H-62, size: 9, font: helv, color: rgb(1,1,1) });
+
+  const today = new Date().toLocaleDateString('fr-FR');
+  page.drawText('Émis le ' + today, { x: W - M - 90, y: H-44, size: 9, font: helv, color: rgb(1,1,1) });
+
+  y = H - 92;
+
+  const form = pdfDoc.getForm();
+  let fieldCounter = 0;
+
+  /* Helper : titre de section */
+  function sectionTitle(label, color) {
+    page.drawRectangle({ x:M, y:y-4, width:W-2*M, height:22, color: color || rgb(0.96,0.94,0.99), borderWidth:0 });
+    page.drawText(label, { x: M+10, y: y+2, size: 10, font: helvBold, color: rgb(0.27, 0.13, 0.5) });
+    y -= 30;
+  }
+
+  /* Helper : champ éditable (TextField) */
+  function field(label, value, width, opts) {
+    opts = opts || {};
+    const fieldH = 22;
+    if (y - fieldH - 14 < 50) return; // protection
+    page.drawText(label, { x: opts.x ?? M, y: y, size: 7.5, font: helv, color: rgb(0.42, 0.39, 0.5) });
+    const tf = form.createTextField('f_' + (++fieldCounter));
+    tf.setText((value ?? '').toString());
+    tf.addToPage(page, {
+      x: opts.x ?? M,
+      y: y - fieldH - 2,
+      width: width,
+      height: fieldH,
+      borderColor: rgb(0.85, 0.82, 0.9),
+      borderWidth: 0.8,
+      backgroundColor: rgb(1,1,1),
+      textColor: rgb(0.12, 0.09, 0.18),
+      font: helv,
+    });
+  }
+
+  /* Helper : ligne de champs */
+  function row(cells, gap) {
+    gap = gap || 8;
+    const totalGap = gap * (cells.length - 1);
+    const w = (W - 2*M - totalGap) / cells.length;
+    cells.forEach((c, i) => {
+      field(c.label, c.value, w, { x: M + i*(w+gap) });
+    });
+    y -= 40;
+  }
+
+  // (Pas de pagination dynamique : tient sur 1 page pour la convention,
+  //  et la 2e page est ajoutée explicitement pour la section maître d'apprentissage.)
+
+  // ============ Section APPRENTI ============
+  sectionTitle("1. L'APPRENTI / STAGIAIRE");
+  row([
+    { label: 'CIVILITÉ',   value: A.civilite || '' },
+    { label: 'NOM',        value: (A.nom||'').toUpperCase() },
+    { label: 'PRÉNOM',     value: A.prenom || '' },
+  ]);
+  row([
+    { label: 'DATE DE NAISSANCE',  value: fmtDate(A.dateNaissance) },
+    { label: 'LIEU DE NAISSANCE',  value: A.lieuNaissance || '' },
+    { label: 'NATIONALITÉ',        value: A.nationalite || '' },
+  ]);
+  // Adresse pleine largeur
+  field('ADRESSE', A.adresse || '', W - 2*M);
+  y -= 40;
+  row([
+    { label: 'CODE POSTAL', value: A.codePostal || '' },
+    { label: 'VILLE',       value: A.ville || '' },
+    { label: 'TÉLÉPHONE',   value: A.telephone || '' },
+  ]);
+  row([
+    { label: 'EMAIL',                value: A.email || '' },
+    { label: 'NIVEAU DE FORMATION',  value: A.niveauFormation || '' },
+    { label: 'DERNIER DIPLÔME',      value: A.dernierDiplome || '' },
+  ]);
+
+  // ============ Section FORMATION ============
+  sectionTitle('2. LA FORMATION');
+  field('INTITULÉ DE LA FORMATION', A.intitule || '', W - 2*M);
+  y -= 40;
+  row([
+    { label: 'DIPLÔME / TITRE VISÉ', value: A.diplomeVise || '' },
+    { label: 'CODE RNCP',            value: A.codeRNCP || '' },
+    { label: 'DURÉE (HEURES)',       value: A.duree ? A.duree + ' h' : '' },
+  ]);
+  row([
+    { label: 'DATE DE DÉBUT', value: fmtDate(A.dateDebut) },
+    { label: 'DATE DE FIN',   value: fmtDate(A.dateFin) },
+    { label: 'LIEU DE FORMATION', value: A.lieuForm || '' },
+  ]);
+  row([
+    { label: 'FINANCEMENT', value: A.financement || '' },
+    { label: 'OPCO',        value: A.nomOPCO || '—' },
+    { label: 'COÛT TOTAL (€)', value: A.cout ? A.cout + ' €' : '' },
+  ]);
+
+  // ============ Section ENTREPRISE (si applicable) ============
+  if (needsEntreprise() && STATE.entrepriseData) {
+    sectionTitle("3. L'EMPLOYEUR");
+    row([
+      { label: 'RAISON SOCIALE', value: E.raisonSociale || '' },
+      { label: 'SIRET',          value: E.siret || '' },
+      { label: 'CODE NAF / APE', value: E.codeNAF || '' },
+    ]);
+    row([
+      { label: "TYPE D'EMPLOYEUR", value: E.typeEmployeur || '' },
+      { label: 'EFFECTIF',         value: E.effectif || '' },
+      { label: 'TÉLÉPHONE',        value: E.telEmp || '' },
+    ]);
+    field('ADRESSE', E.adresseEmp || '', W - 2*M);
+    y -= 40;
+    row([
+      { label: 'CODE POSTAL', value: E.cpEmp || '' },
+      { label: 'VILLE',       value: E.villeEmp || '' },
+      { label: 'EMAIL',       value: E.emailEmp || '' },
+    ]);
+    row([
+      { label: 'RESPONSABLE (NOM)',    value: (E.nomResp||'').toUpperCase() },
+      { label: 'RESPONSABLE (PRÉNOM)', value: E.prenomResp || '' },
+      { label: 'TYPE DE CONTRAT',      value: E.typeContrat || '' },
+    ]);
+
+    // Si on dépasse la page, on ajoute une seconde page pour le maître
+    let p2 = page;
+    if (y < 220) {
+      p2 = pdfDoc.addPage([W, H]);
+      p2.drawRectangle({ x:0, y:H-26, width:W, height:26, color: rgb(0.545, 0.247, 0.941) });
+      p2.drawText('forma+  —  ' + (titleMap[STATE.docType]||''), { x: M, y: H-18, size: 8, font: helvBold, color: rgb(1,1,1) });
+      y = H - 60;
+    }
+
+    /* Sur p2 si besoin, on dessine la section Maître */
+    function titleOn(p, label) {
+      p.drawRectangle({ x:M, y:y-4, width:W-2*M, height:22, color: rgb(0.96,0.94,0.99) });
+      p.drawText(label, { x: M+10, y: y+2, size: 10, font: helvBold, color: rgb(0.27, 0.13, 0.5) });
+      y -= 30;
+    }
+    function fieldOn(p, label, value, x, w) {
+      const fh = 22;
+      p.drawText(label, { x: x, y: y, size: 7.5, font: helv, color: rgb(0.42, 0.39, 0.5) });
+      const tf = form.createTextField('f_' + (++fieldCounter));
+      tf.setText((value ?? '').toString());
+      tf.addToPage(p, { x, y: y - fh - 2, width: w, height: fh,
+        borderColor: rgb(0.85,0.82,0.9), borderWidth: 0.8,
+        backgroundColor: rgb(1,1,1), textColor: rgb(0.12,0.09,0.18), font: helv });
+    }
+    function rowOn(p, cells) {
+      const gap = 8, w = (W - 2*M - gap*(cells.length-1))/cells.length;
+      cells.forEach((c,i) => fieldOn(p, c.label, c.value, M + i*(w+gap), w));
+      y -= 40;
+    }
+
+    titleOn(p2, "4. LE MAÎTRE D'APPRENTISSAGE");
+    rowOn(p2, [
+      { label: 'NOM',     value: (E.nomMaitre||'').toUpperCase() },
+      { label: 'PRÉNOM',  value: E.prenomMaitre || '' },
+      { label: 'DATE DE NAISSANCE', value: fmtDate(E.dnMaitre) },
+    ]);
+    fieldOn(p2, 'DIPLÔME / QUALIFICATION', E.diplomeMaitre || '', M, W - 2*M);
+    y -= 40;
+    rowOn(p2, [
+      { label: 'DATE DE DÉBUT DU CONTRAT', value: fmtDate(E.dateDebutContrat) },
+      { label: 'TYPE DE CONTRAT', value: E.typeContrat || '' },
+    ]);
+
+    // Zone signatures
+    y -= 20;
+    titleOn(p2, 'SIGNATURES');
+    rowOn(p2, [
+      { label: "SIGNATURE DE L'APPRENTI", value: '' },
+      { label: "SIGNATURE DE L'EMPLOYEUR", value: '' },
+    ]);
+    rowOn(p2, [
+      { label: "FAIT À", value: E.villeEmp || '' },
+      { label: 'LE',     value: today },
+    ]);
+
+  } else {
+    // Convention seule : signatures sur la page principale si place
+    y -= 10;
+    sectionTitle('SIGNATURES');
+    row([
+      { label: "SIGNATURE DE L'APPRENANT", value: '' },
+      { label: 'SIGNATURE DE FORMA+', value: '' },
+    ]);
+    row([
+      { label: 'FAIT À', value: A.ville || '' },
+      { label: 'LE',     value: today },
+    ]);
+  }
+
+  return await pdfDoc.save();
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  // d est au format yyyy-mm-dd
+  const parts = d.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return d;
+}
+
+/* ============================================================
+   Init au chargement
+============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  if (!detectRoleFromUrl()) {
+    showView('viewSelect');
+  }
+});
+</script>
+</body>
+</html>
