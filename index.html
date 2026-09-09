@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="cerfa_template.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root {
   --purple:      #8B3FF0;
@@ -72,7 +73,7 @@ header {
 
 .choice-cards { display:grid; grid-template-columns:1fr; gap:12px; text-align:left; }
 .choice-card { position:relative; }
-.choice-card input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+.choice-card input[type="checkbox"] { position:absolute; opacity:0; width:0; height:0; }
 .choice-card label {
   display:flex; align-items:center; gap:18px;
   padding:20px 24px; border:1.5px solid var(--gray-200); border-radius:var(--radius);
@@ -96,11 +97,11 @@ header {
 #doc_app + label .choice-icon svg { stroke:var(--orange); }
 #doc_app:checked + label .choice-icon { background:var(--orange); }
 #doc_app:checked + label .choice-icon svg { stroke:white; }
-/* Les deux → pink */
-#doc_both + label .choice-icon { background:var(--pink-50); }
-#doc_both + label .choice-icon svg { stroke:var(--pink); }
-#doc_both:checked + label .choice-icon { background:var(--pink); }
-#doc_both:checked + label .choice-icon svg { stroke:white; }
+/* Fiche de liaison → green */
+#doc_fiche + label .choice-icon { background:#e3f9ec; }
+#doc_fiche + label .choice-icon svg { stroke:var(--green); }
+#doc_fiche:checked + label .choice-icon { background:var(--green); }
+#doc_fiche:checked + label .choice-icon svg { stroke:white; }
 
 .choice-text strong { display:block; font-size:15px; font-weight:700; color:var(--gray-900); margin-bottom:3px; }
 .choice-text span { font-size:13px; color:var(--gray-500); }
@@ -116,6 +117,7 @@ header {
 }
 .btn-start:hover { background:var(--purple-dark); transform:translateY(-1px); box-shadow:0 6px 18px rgba(139,63,240,0.36); }
 .btn-start svg { width:17px; height:17px; stroke:white; fill:none; }
+.btn-start:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none; }
 
 /* ── Form view ── */
 .form-container { max-width:860px; margin:0 auto; padding:36px 24px 80px; }
@@ -164,7 +166,7 @@ label { font-size:12px; font-weight:600; color:var(--gray-600); letter-spacing:0
 label .req { color:var(--purple); margin-left:1px; }
 label .opt { color:var(--gray-400); font-weight:400; margin-left:4px; }
 
-input, select, textarea {
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   width:100%; height:42px; padding:0 12px;
   border:1.5px solid var(--gray-200); border-radius:8px;
   font-family:inherit; font-size:13.5px; color:var(--gray-800);
@@ -202,7 +204,7 @@ select {
   cursor:pointer; font-size:13px; font-weight:500; color:var(--gray-600); transition:all 0.15s;
 }
 .pill label:hover { border-color:var(--purple); color:var(--purple); }
-.pill input:checked + label { border-color:var(--purple); background:var(--purple); color:white; }
+.pill input:checked + label { border-color:var(--purple); background:var(--purple-50); color:var(--purple); }
 
 /* Submit zone */
 .submit-zone {
@@ -212,7 +214,7 @@ select {
 }
 .cert-wrap { flex:1; }
 .cert-check { display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; }
-.cert-check input[type="checkbox"] { width:17px; height:17px; min-width:17px; accent-color:var(--purple); margin-top:2px; cursor:pointer; }
+.cert-check input[type="checkbox"] { appearance:auto; width:17px; height:17px; min-width:17px; border:none; background:none; padding:0; accent-color:var(--purple); margin-top:2px; cursor:pointer; }
 .cert-check label { font-size:13px; color:var(--gray-600); font-weight:400; line-height:1.6; cursor:pointer; }
 .field-error.cert-err { margin-bottom:12px; }
 
@@ -351,6 +353,94 @@ select {
 .btn-download svg { width:18px; height:18px; stroke:white; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
 .btn-download:disabled { opacity:0.6; cursor:wait; }
 
+/* Liste des documents générés (multi-doc) */
+.download-list { display:flex; flex-direction:column; gap:10px; }
+.download-row {
+  display:flex; align-items:center; gap:14px;
+  padding:14px 18px; background:var(--white);
+  border:1px solid var(--gray-200); border-radius:12px; text-align:left;
+}
+.download-row .dl-icon {
+  width:38px; height:38px; border-radius:9px; flex-shrink:0;
+  background:var(--purple-100); display:flex; align-items:center; justify-content:center;
+}
+.download-row .dl-icon svg { width:18px; height:18px; stroke:var(--purple); fill:none; stroke-width:2; }
+.download-row .dl-text { flex:1; min-width:0; }
+.download-row .dl-text strong { display:block; font-size:13.5px; font-weight:700; color:var(--gray-900); }
+.download-row .dl-text span { font-size:12px; color:var(--gray-500); }
+.download-row .btn-dl-one {
+  height:38px; padding:0 16px; flex-shrink:0;
+  background:var(--green); color:white; border:none; border-radius:8px;
+  font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; transition:all 0.15s;
+}
+.download-row .btn-dl-one:hover { background:#14a84a; }
+.download-row .btn-dl-one svg { width:14px; height:14px; stroke:white; fill:none; stroke-width:2.5; }
+.download-row .btn-dl-one:disabled { opacity:0.6; cursor:wait; }
+
+/* ── Champs pré-remplis par l'employeur ── */
+input.prefilled, select.prefilled {
+  background: var(--purple-50);
+  border-color: var(--purple-100);
+}
+input.prefilled:focus, select.prefilled:focus {
+  background: var(--white);
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139,63,240,0.09);
+}
+
+/* Bannière hint employeur (section apprenti côté employeur) */
+.employer-hint-banner {
+  background: var(--orange-50);
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12.5px;
+  color: var(--gray-600);
+  line-height: 1.55;
+  display: none;
+  gap: 10px;
+  align-items: flex-start;
+}
+.employer-hint-banner.show { display: flex; }
+.employer-hint-banner svg { flex-shrink: 0; stroke: var(--orange); fill: none; margin-top: 1px; }
+.employer-hint-banner strong { color: #92400e; }
+
+/* Bannière confirmation côté apprenti */
+.apprenti-prefill-banner {
+  background: linear-gradient(135deg, var(--purple-50), #f0fff9);
+  border: 1px solid var(--purple-100);
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.55;
+  display: none;
+  gap: 10px;
+  align-items: flex-start;
+}
+.apprenti-prefill-banner.show { display: flex; }
+.apprenti-prefill-banner svg { flex-shrink: 0; stroke: var(--purple); fill: none; margin-top: 2px; }
+
+/* Champs conditionnels : la visibilité est pilotée en JS (renderForm) via .style.display,
+   selon la combinaison de documents sélectionnée (.appx = CERFA, .convx = Convention). */
+
+/* Sous-titres des parties (fiche de liaison + convention) */
+.fiche-part {
+  font-size:12px; font-weight:700; color:var(--green);
+  text-transform:uppercase; letter-spacing:0.5px;
+  padding:8px 0 2px; margin-top:6px;
+  border-top:1px solid var(--gray-100);
+}
+.fiche-part:first-child { border-top:none; margin-top:0; }
+.fiche-part .fiche-opt { color:var(--gray-400); font-weight:400; text-transform:none; letter-spacing:0; }
+.fiche-part-hint { font-size:11.5px; color:var(--gray-400); margin-top:-4px; margin-bottom:2px; line-height:1.5; }
+.fiche-year-lbl { font-size:11.5px; font-weight:700; color:var(--gray-500); margin-top:4px; }
+.fiche-year-lbl .opt { font-weight:400; }
+
+/* Textarea missions */
+textarea { height:auto; min-height:96px; padding:10px 12px; resize:vertical; line-height:1.5; }
+
 /* ── Responsive ── */
 @media(max-width:680px){
   .form-grid { grid-template-columns:1fr; }
@@ -362,6 +452,57 @@ select {
   .link-box { flex-direction:column; align-items:stretch; padding:8px; }
   .btn-copy { width:100%; justify-content:center; }
 }
+
+/* ── Modal : méthode de remplissage ── */
+.method-overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(16,12,30,0.55);
+  backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+  animation:fadeIn 0.2s ease;
+}
+.method-overlay.hidden { display:none; }
+.method-box {
+  background:var(--white); border-radius:20px;
+  padding:40px; max-width:520px; width:100%;
+  box-shadow:0 24px 80px rgba(0,0,0,0.2);
+  animation:scaleIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes scaleIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+.method-box h2 { font-size:22px; font-weight:800; color:var(--gray-900); margin-bottom:6px; }
+.method-box > p { font-size:14px; color:var(--gray-500); margin-bottom:28px; }
+.method-options { display:flex; flex-direction:column; gap:12px; }
+.method-options.hide { display:none; }
+.method-card {
+  display:flex; align-items:center; gap:18px;
+  padding:20px 22px; border:1.5px solid var(--gray-200);
+  border-radius:14px; cursor:pointer; background:var(--white);
+  transition:all 0.18s; text-align:left; width:100%; font-family:inherit;
+}
+.method-card:hover { border-color:var(--purple); background:var(--purple-50); transform:translateY(-1px); box-shadow:0 4px 16px rgba(139,63,240,0.12); }
+.method-icon { width:50px; height:50px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.method-icon svg { width:24px; height:24px; }
+.method-card.manual .method-icon { background:var(--purple-100); }
+.method-card.manual .method-icon svg { stroke:var(--purple); fill:none; }
+.method-card.manual:hover .method-icon { background:var(--purple); }
+.method-card.manual:hover .method-icon svg { stroke:white; }
+.method-card.doc .method-icon { background:var(--orange-50); }
+.method-card.doc .method-icon svg { stroke:var(--orange); fill:none; }
+.method-card.doc:hover .method-icon { background:var(--orange); }
+.method-card.doc:hover .method-icon svg { stroke:white; }
+.method-text strong { display:block; font-size:15px; font-weight:700; color:var(--gray-800); margin-bottom:2px; }
+.method-text span { font-size:13px; color:var(--gray-500); }
+.method-loading { display:none; text-align:center; padding:16px 0 4px; }
+.method-loading.show { display:block; }
+.spinner { width:44px; height:44px; border:3px solid var(--gray-200); border-top-color:var(--purple); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 14px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.method-loading strong { display:block; font-size:16px; font-weight:700; color:var(--gray-800); margin-bottom:4px; }
+.method-loading p { font-size:13px; color:var(--gray-500); }
+.prefill-banner { background:linear-gradient(135deg,var(--purple-50),#f0fff4); border:1px solid var(--purple-100); border-radius:12px; padding:16px 20px; display:flex; align-items:flex-start; gap:12px; margin-bottom:0; }
+.prefill-banner svg { width:20px; height:20px; stroke:var(--purple); fill:none; flex-shrink:0; margin-top:1px; }
+.prefill-banner p { font-size:13px; color:var(--gray-700); line-height:1.5; }
+.prefill-banner strong { color:var(--purple); }
 </style>
 </head>
 <body>
@@ -376,15 +517,15 @@ select {
   </div>
 </header>
 
-<!-- ── VUE 1 : Sélection ── -->
+<!-- ── VUE 1 : Sélection (multi-choix) ── -->
 <div class="view active" id="viewSelect">
   <div class="select-container">
-    <h1>Quel document souhaitez-vous générer ?</h1>
-    <p>Sélectionnez le ou les documents nécessaires à votre dossier.</p>
+    <h1>Quels documents souhaitez-vous générer ?</h1>
+    <p>Sélectionnez un ou plusieurs documents — le formulaire s'adaptera pour ne demander que les informations nécessaires.</p>
 
     <div class="choice-cards">
       <div class="choice-card">
-        <input type="radio" name="docType" id="doc_conv" value="convention">
+        <input type="checkbox" name="docType" id="doc_conv" value="convention" onchange="updateStartBtn()">
         <label for="doc_conv">
           <div class="choice-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -395,12 +536,12 @@ select {
           </div>
           <div class="choice-text">
             <strong>Convention de formation</strong>
-            <span>Formation continue ou professionnelle</span>
+            <span>Convention par apprentissage (modèle officiel)</span>
           </div>
         </label>
       </div>
       <div class="choice-card">
-        <input type="radio" name="docType" id="doc_app" value="apprentissage">
+        <input type="checkbox" name="docType" id="doc_app" value="apprentissage" onchange="updateStartBtn()">
         <label for="doc_app">
           <div class="choice-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -415,24 +556,23 @@ select {
         </label>
       </div>
       <div class="choice-card">
-        <input type="radio" name="docType" id="doc_both" value="both">
-        <label for="doc_both">
+        <input type="checkbox" name="docType" id="doc_fiche" value="fiche" onchange="updateStartBtn()">
+        <label for="doc_fiche">
           <div class="choice-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
+              <path d="M9 11H15M9 15H13M9 7H15"/>
+              <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
             </svg>
           </div>
           <div class="choice-text">
-            <strong>Les deux documents</strong>
-            <span>Convention + CERFA contrat d'apprentissage</span>
+            <strong>Fiche de liaison</strong>
+            <span>Fiche de liaison CFA / Employeur</span>
           </div>
         </label>
       </div>
     </div>
 
-    <button class="btn-start" onclick="startForm()">
+    <button class="btn-start" id="btnStart" onclick="startForm()" disabled>
       Remplir le formulaire
       <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
     </button>
@@ -460,13 +600,20 @@ select {
     <div class="form-grid" id="formGrid">
 
       <!-- Stagiaire -->
-      <div class="section-block">
+      <div class="section-block" id="sectionApprenti">
         <div class="section-head">
           <div class="section-dot" style="background:var(--pink)"></div>
           <h2>Stagiaire / Apprenti</h2>
         </div>
         <div class="section-body">
-          <div class="field">
+          <!-- Bannière visible côté employeur (optionnel) -->
+          <div class="employer-hint-banner" id="employerHintBanner">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span><strong>Optionnel</strong> — Pré-remplissez les informations de l'apprenti(e) si vous les connaissez. Il/elle pourra les vérifier et les modifier avant de générer le PDF.</span>
+          </div>
+          <!-- Bannière visible côté apprenti si pré-rempli -->
+          <div class="apprenti-prefill-banner" id="apprentiPrefillBanner"></div>
+          <div class="field appx">
             <label>Civilité <span class="req">*</span></label>
             <div class="civility-row">
               <div class="civ-opt"><input type="radio" name="civilite" id="civ_m" value="M."><label for="civ_m">M.</label></div>
@@ -485,7 +632,7 @@ select {
               <span class="field-error" id="err_prenom">Obligatoire</span>
             </div>
           </div>
-          <div class="inner-row">
+          <div class="inner-row appx">
             <div class="field">
               <label for="dateNaissance">Date de naissance <span class="req">*</span></label>
               <input type="date" id="dateNaissance">
@@ -497,17 +644,17 @@ select {
               <span class="field-error" id="err_lieuNaissance">Obligatoire</span>
             </div>
           </div>
-          <div class="field">
+          <div class="field appx">
             <label for="nationalite">Nationalité <span class="req">*</span></label>
             <input type="text" id="nationalite" value="Française">
             <span class="field-error" id="err_nationalite">Obligatoire</span>
           </div>
-          <div class="field">
+          <div class="field appx">
             <label for="adresse">Adresse <span class="req">*</span></label>
             <input type="text" id="adresse" placeholder="12 rue de la Paix">
             <span class="field-error" id="err_adresse">Obligatoire</span>
           </div>
-          <div class="inner-row cols-1-2">
+          <div class="inner-row cols-1-2 appx">
             <div class="field">
               <label for="codePostal">Code postal <span class="req">*</span></label>
               <input type="text" id="codePostal" placeholder="75001" maxlength="5">
@@ -529,7 +676,7 @@ select {
             <input type="tel" id="telephone" placeholder="06 00 00 00 00">
             <span class="field-error" id="err_telephone">Invalide</span>
           </div>
-          <div class="field">
+          <div class="field appx">
             <label for="niveauFormation">Niveau de formation <span class="req">*</span></label>
             <select id="niveauFormation">
               <option value="">-- Sélectionner --</option>
@@ -542,7 +689,7 @@ select {
             </select>
             <span class="field-error" id="err_niveauFormation">Obligatoire</span>
           </div>
-          <div class="field">
+          <div class="field appx">
             <label for="dernierDiplome">Dernier diplôme obtenu <span class="opt">(optionnel)</span></label>
             <input type="text" id="dernierDiplome" placeholder="Ex : BTS Management">
           </div>
@@ -703,6 +850,12 @@ select {
               <span class="field-error" id="err_telEmp">Invalide</span>
             </div>
           </div>
+          <div class="inner-row cols-3 convx">
+            <div class="field">
+              <label for="idcc">Code IDCC (convention collective) <span class="opt">(optionnel)</span></label>
+              <input type="text" id="idcc" placeholder="1486">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -710,12 +863,24 @@ select {
       <div class="section-block full" id="sectionMaitre" style="display:none">
         <div class="section-head">
           <div class="section-dot" style="background:var(--purple)"></div>
-          <h2>Maître d'apprentissage</h2>
+          <h2>Contrat &amp; maître d'apprentissage</h2>
         </div>
         <div class="section-body">
-          <div class="inner-row cols-3">
+          <div class="inner-row">
             <div class="field">
-              <label for="nomMaitre">Nom <span class="req">*</span></label>
+              <label for="dateDebutContrat">Date de début du contrat <span class="req">*</span></label>
+              <input type="date" id="dateDebutContrat">
+              <span class="field-error" id="err_dateDebutContrat">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="dateFinContrat">Date de fin du contrat <span class="req">*</span></label>
+              <input type="date" id="dateFinContrat">
+              <span class="field-error" id="err_dateFinContrat">Invalide</span>
+            </div>
+          </div>
+          <div class="inner-row cols-3 appx">
+            <div class="field">
+              <label for="nomMaitre">Nom du maître d'apprentissage <span class="req">*</span></label>
               <input type="text" id="nomMaitre" placeholder="Durand">
               <span class="field-error" id="err_nomMaitre">Obligatoire</span>
             </div>
@@ -730,28 +895,456 @@ select {
               <span class="field-error" id="err_dnMaitre">Obligatoire</span>
             </div>
           </div>
-          <div class="inner-row">
+          <div class="inner-row appx">
             <div class="field">
               <label for="diplomeMaitre">Diplôme / qualification <span class="req">*</span></label>
               <input type="text" id="diplomeMaitre" placeholder="BTS + 2 ans d'expérience">
               <span class="field-error" id="err_diplomeMaitre">Obligatoire</span>
             </div>
             <div class="field">
-              <label for="dateDebutContrat">Date de début du contrat <span class="req">*</span></label>
-              <input type="date" id="dateDebutContrat">
-              <span class="field-error" id="err_dateDebutContrat">Obligatoire</span>
+              <label for="typeContrat">Type de contrat <span class="req">*</span></label>
+              <select id="typeContrat">
+                <option value="">-- Sélectionner --</option>
+                <option>Initial</option>
+                <option>Succession</option>
+                <option>Rupture / Nouveau contrat</option>
+              </select>
+              <span class="field-error" id="err_typeContrat">Obligatoire</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CFA / Organisme de formation (convention uniquement) -->
+      <div class="section-block full" id="sectionCFA" style="display:none">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--purple)"></div>
+          <h2>CFA / Organisme de formation</h2>
+        </div>
+        <div class="section-body">
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="cfa_denomination">Dénomination du CFA <span class="req">*</span></label>
+              <input type="text" id="cfa_denomination" placeholder="CFA Grand Dôme">
+              <span class="field-error" id="err_cfa_denomination">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="cfa_siret">SIRET <span class="req">*</span></label>
+              <input type="text" id="cfa_siret" placeholder="784 573 792 000 24" maxlength="17">
+              <span class="field-error" id="err_cfa_siret">14 chiffres requis</span>
+            </div>
+            <div class="field">
+              <label for="cfa_uai">N° UAI <span class="req">*</span></label>
+              <input type="text" id="cfa_uai" placeholder="0912345M">
+              <span class="field-error" id="err_cfa_uai">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row cols-1-2">
+            <div class="field">
+              <label for="cfa_cp">Code postal <span class="req">*</span></label>
+              <input type="text" id="cfa_cp" placeholder="91140" maxlength="5">
+              <span class="field-error" id="err_cfa_cp">Invalide</span>
+            </div>
+            <div class="field">
+              <label for="cfa_adresse">Adresse <span class="req">*</span></label>
+              <input type="text" id="cfa_adresse" placeholder="3 rue du Grand Dôme, Villebon-sur-Yvette">
+              <span class="field-error" id="err_cfa_adresse">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="cfa_declaration">N° déclaration d'activité <span class="opt">(optionnel)</span></label>
+              <input type="text" id="cfa_declaration" placeholder="11754209875">
+            </div>
+            <div class="field">
+              <label for="cfa_prefecture">Préfecture de région <span class="opt">(optionnel)</span></label>
+              <input type="text" id="cfa_prefecture" placeholder="Île-de-France">
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="cfa_repNom">Nom du représentant légal <span class="req">*</span></label>
+              <input type="text" id="cfa_repNom" placeholder="Margerit">
+              <span class="field-error" id="err_cfa_repNom">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="cfa_repPrenom">Prénom du représentant légal <span class="req">*</span></label>
+              <input type="text" id="cfa_repPrenom" placeholder="Mikaël">
+              <span class="field-error" id="err_cfa_repPrenom">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="cfa_contactNom">Contact opérationnel — Nom <span class="opt">(optionnel)</span></label>
+              <input type="text" id="cfa_contactNom" placeholder="Margerit">
+            </div>
+            <div class="field">
+              <label for="cfa_contactEmail">Email du contact <span class="opt">(optionnel)</span></label>
+              <input type="email" id="cfa_contactEmail" placeholder="contact@cfa.fr">
+            </div>
+            <div class="field">
+              <label for="cfa_contactTel">Téléphone du contact <span class="opt">(optionnel)</span></label>
+              <input type="tel" id="cfa_contactTel" placeholder="01 00 00 00 00">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Convention — pédagogie & suivi (convention uniquement) -->
+      <div class="section-block full" id="sectionConvPedago" style="display:none">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--purple)"></div>
+          <h2>Convention — Pédagogie &amp; suivi</h2>
+        </div>
+        <div class="section-body">
+          <div class="field">
+            <label for="conv_contenu">Contenu de l'action <span class="opt">(optionnel)</span></label>
+            <textarea id="conv_contenu" placeholder="Se référer aux référentiels du diplôme / titre concerné..."></textarea>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="conv_modalites">Modalités de déroulement <span class="req">*</span></label>
+              <select id="conv_modalites">
+                <option value="">-- Sélectionner --</option>
+                <option>Présentiel</option>
+                <option>À distance</option>
+                <option>Mixte</option>
+                <option>Mobilité européenne et internationale</option>
+              </select>
+              <span class="field-error" id="err_conv_modalites">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="conv_heuresDistance">Dont heures à distance <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_heuresDistance" placeholder="0" min="0">
             </div>
           </div>
           <div class="field">
-            <label for="typeContrat">Type de contrat <span class="req">*</span></label>
-            <select id="typeContrat">
-              <option value="">-- Sélectionner --</option>
-              <option>Initial</option>
-              <option>Succession</option>
-              <option>Rupture / Nouveau contrat</option>
-            </select>
-            <span class="field-error" id="err_typeContrat">Obligatoire</span>
+            <label for="conv_moyens">Moyens prévus <span class="opt">(optionnel)</span></label>
+            <textarea id="conv_moyens" placeholder="Moyens humains et techniques mobilisés..."></textarea>
           </div>
+          <div class="field">
+            <label for="conv_suivi">Modalités de suivi <span class="opt">(optionnel)</span></label>
+            <input type="text" id="conv_suivi" placeholder="Livret d'apprentissage, visites en entreprise...">
+          </div>
+          <div class="field">
+            <label for="conv_obtention">Modalités d'obtention du diplôme / titre <span class="req">*</span></label>
+            <select id="conv_obtention">
+              <option value="">-- Sélectionner --</option>
+              <option>Examen terminal</option>
+              <option>Contrôle continu</option>
+              <option>Examen terminal et contrôle continu</option>
+            </select>
+            <span class="field-error" id="err_conv_obtention">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="conv_periodes">Périodes de réalisation en entreprise et en CFA <span class="opt">(optionnel)</span></label>
+            <textarea id="conv_periodes" placeholder="Se référer au calendrier de l'alternance en annexe..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Convention — financement & clauses (convention uniquement) -->
+      <div class="section-block full" id="sectionConvFinance" style="display:none">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--purple)"></div>
+          <h2>Convention — Financement &amp; clauses</h2>
+        </div>
+        <div class="section-body">
+          <p class="fiche-part">Prise en charge financière par année</p>
+          <p class="fiche-part-hint">Prix de la prestation, montant pris en charge par l'OPCO, participation obligatoire de l'employeur (certifications niveau 6/7). Laissez vide les années non applicables.</p>
+
+          <label class="fiche-year-lbl">1ère année</label>
+          <div class="inner-row cols-3">
+            <div class="field"><label for="conv_a1_prix">Prix prestation (€) <span class="req">*</span></label><input type="number" id="conv_a1_prix" min="0" step="0.01"><span class="field-error" id="err_conv_a1_prix">Obligatoire</span></div>
+            <div class="field"><label for="conv_a1_opco">Pris en charge OPCO (€)</label><input type="number" id="conv_a1_opco" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a1_partemp">Participation employeur (€)</label><input type="number" id="conv_a1_partemp" min="0" step="0.01"></div>
+          </div>
+
+          <label class="fiche-year-lbl">2ème année <span class="opt">(optionnel)</span></label>
+          <div class="inner-row cols-3">
+            <div class="field"><label for="conv_a2_prix">Prix prestation (€)</label><input type="number" id="conv_a2_prix" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a2_opco">Pris en charge OPCO (€)</label><input type="number" id="conv_a2_opco" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a2_partemp">Participation employeur (€)</label><input type="number" id="conv_a2_partemp" min="0" step="0.01"></div>
+          </div>
+
+          <label class="fiche-year-lbl">3ème année <span class="opt">(optionnel)</span></label>
+          <div class="inner-row cols-3">
+            <div class="field"><label for="conv_a3_prix">Prix prestation (€)</label><input type="number" id="conv_a3_prix" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a3_opco">Pris en charge OPCO (€)</label><input type="number" id="conv_a3_opco" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a3_partemp">Participation employeur (€)</label><input type="number" id="conv_a3_partemp" min="0" step="0.01"></div>
+          </div>
+
+          <label class="fiche-year-lbl">4ème année <span class="opt">(optionnel)</span></label>
+          <div class="inner-row cols-3">
+            <div class="field"><label for="conv_a4_prix">Prix prestation (€)</label><input type="number" id="conv_a4_prix" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a4_opco">Pris en charge OPCO (€)</label><input type="number" id="conv_a4_opco" min="0" step="0.01"></div>
+            <div class="field"><label for="conv_a4_partemp">Participation employeur (€)</label><input type="number" id="conv_a4_partemp" min="0" step="0.01"></div>
+          </div>
+
+          <div class="inner-row cols-3">
+            <div class="field">
+              <label for="conv_majorationHandicap">Majoration handicap (€) <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_majorationHandicap" min="0" step="0.01">
+            </div>
+            <div class="field">
+              <label for="conv_modulationUltramarin">Modulation ultramarins (€) <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_modulationUltramarin" min="0" step="0.01">
+            </div>
+            <div class="field">
+              <label for="conv_modulationDistance">Modulation form. à distance (€) <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_modulationDistance" min="0" step="0.01">
+            </div>
+          </div>
+
+          <p class="fiche-part">Frais annexes (temps en CFA)</p>
+          <div class="inner-row">
+            <div class="field">
+              <label for="conv_nuitees">Nombre de nuitées envisagées <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_nuitees" min="0">
+            </div>
+            <div class="field">
+              <label for="conv_montantHeb">Montant hébergement total (€) <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_montantHeb" min="0" step="0.01">
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="conv_repas">Nombre de repas envisagés <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_repas" min="0">
+            </div>
+            <div class="field">
+              <label for="conv_montantRest">Montant restauration total (€) <span class="opt">(optionnel)</span></label>
+              <input type="number" id="conv_montantRest" min="0" step="0.01">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Premier équipement pédagogique</label>
+            <div class="pills">
+              <div class="pill"><input type="radio" name="conv_equipement" id="conv_equip_oui" value="Oui" onchange="toggleConvEquipement()"><label for="conv_equip_oui">Oui</label></div>
+              <div class="pill"><input type="radio" name="conv_equipement" id="conv_equip_non" value="Non" onchange="toggleConvEquipement()"><label for="conv_equip_non">Non</label></div>
+            </div>
+          </div>
+          <div id="convEquipementDetail" style="display:none">
+            <div class="inner-row">
+              <div class="field">
+                <label for="conv_equipementMontant">Montant forfait OPCO (€)</label>
+                <input type="number" id="conv_equipementMontant" min="0" step="0.01">
+              </div>
+              <div class="field">
+                <label>Nature de l'équipement</label>
+                <div class="pills">
+                  <div class="pill"><input type="checkbox" id="conv_equip_formation"><label for="conv_equip_formation">Lié à la formation</label></div>
+                  <div class="pill"><input type="checkbox" id="conv_equip_info"><label for="conv_equip_info">Informatique</label></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Frais de mobilité internationale / ultramarine</label>
+            <div class="pills">
+              <div class="pill"><input type="radio" name="conv_mobilite" id="conv_mob_oui" value="Oui" onchange="toggleConvMobilite()"><label for="conv_mob_oui">Oui</label></div>
+              <div class="pill"><input type="radio" name="conv_mobilite" id="conv_mob_non" value="Non" onchange="toggleConvMobilite()"><label for="conv_mob_non">Non</label></div>
+            </div>
+          </div>
+          <div class="field" id="convMobiliteDetail" style="display:none">
+            <label for="conv_mobiliteMontant">Montant forfait OPCO (€)</label>
+            <input type="number" id="conv_mobiliteMontant" min="0" step="0.01">
+          </div>
+
+          <p class="fiche-part">Règlement &amp; clauses</p>
+          <div class="field">
+            <label for="conv_reglement">Modalités de règlement <span class="opt">(optionnel)</span></label>
+            <textarea id="conv_reglement" placeholder="Préciser les modalités de règlement en cas de reste à charge..."></textarea>
+          </div>
+          <div class="field">
+            <label>Mandat donné au CFA <span class="req">*</span></label>
+            <div class="pills">
+              <div class="pill"><input type="radio" name="conv_mandat" id="conv_mandat_non" value="non"><label for="conv_mandat_non">Ne donne pas mandat</label></div>
+              <div class="pill"><input type="radio" name="conv_mandat" id="conv_mandat_oui" value="oui"><label for="conv_mandat_oui">Donne mandat au CFA</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="conv_tribunal">Tribunal compétent (ville) <span class="req">*</span></label>
+            <input type="text" id="conv_tribunal" placeholder="Bordeaux">
+            <span class="field-error" id="err_conv_tribunal">Obligatoire</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fiche de liaison (conditionnel) -->
+      <div class="section-block full" id="sectionFiche" style="display:none">
+        <div class="section-head">
+          <div class="section-dot" style="background:var(--green)"></div>
+          <h2>Fiche de liaison CFA / Employeur</h2>
+        </div>
+        <div class="section-body">
+
+          <!-- Paramètres d'en-tête -->
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_annee">Année universitaire <span class="req">*</span></label>
+              <input type="text" id="f_annee" placeholder="2026-2027">
+              <span class="field-error" id="err_f_annee">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="f_emailRetour">Email de retour (CFA) <span class="req">*</span></label>
+              <input type="email" id="f_emailRetour" placeholder="ua.iae@u-bordeaux.fr">
+              <span class="field-error" id="err_f_emailRetour">Email invalide</span>
+            </div>
+          </div>
+
+          <!-- Partie 1 : La formation -->
+          <p class="fiche-part">1 — La formation</p>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_niveauAnnee">Niveau / année <span class="req">*</span></label>
+              <input type="text" id="f_niveauAnnee" placeholder="Master 1">
+              <span class="field-error" id="err_f_niveauAnnee">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="f_intitule">Intitulé de la formation <span class="req">*</span></label>
+              <input type="text" id="f_intitule" placeholder="MRH : Master Gestion des Ressources Humaines...">
+              <span class="field-error" id="err_f_intitule">Obligatoire</span>
+            </div>
+          </div>
+
+          <!-- Partie 3 : L'entreprise -->
+          <p class="fiche-part">3 — L'entreprise</p>
+          <div class="field">
+            <label for="f_denomination">Dénomination de l'entreprise <span class="req">*</span></label>
+            <input type="text" id="f_denomination" placeholder="Mirakl">
+            <span class="field-error" id="err_f_denomination">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="f_adresseEmp">Adresse <span class="req">*</span></label>
+            <input type="text" id="f_adresseEmp" placeholder="23 Parvis des Chartrons">
+            <span class="field-error" id="err_f_adresseEmp">Obligatoire</span>
+          </div>
+          <div class="inner-row cols-1-2">
+            <div class="field">
+              <label for="f_cpEmp">Code postal <span class="req">*</span></label>
+              <input type="text" id="f_cpEmp" placeholder="33000" maxlength="5">
+              <span class="field-error" id="err_f_cpEmp">Invalide</span>
+            </div>
+            <div class="field">
+              <label for="f_villeEmp">Ville <span class="req">*</span></label>
+              <input type="text" id="f_villeEmp" placeholder="Bordeaux">
+              <span class="field-error" id="err_f_villeEmp">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_siret">SIRET <span class="req">*</span></label>
+              <input type="text" id="f_siret" placeholder="530 897 990 00095" maxlength="17">
+              <span class="field-error" id="err_f_siret">14 chiffres requis</span>
+            </div>
+            <div class="field">
+              <label for="f_opco">OPCO <span class="opt">(optionnel)</span></label>
+              <input type="text" id="f_opco" placeholder="Atlas">
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_codeNAF">Code APE / NAF <span class="req">*</span></label>
+              <input type="text" id="f_codeNAF" placeholder="6311Z" maxlength="5">
+              <span class="field-error" id="err_f_codeNAF">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="f_idcc">Code IDCC convention collective <span class="opt">(optionnel)</span></label>
+              <input type="text" id="f_idcc" placeholder="1486">
+            </div>
+          </div>
+
+          <!-- Partie 4 : Facturation -->
+          <p class="fiche-part">4 — La personne en charge de la facturation <span class="fiche-opt">(optionnel)</span></p>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_nomFact">Nom</label>
+              <input type="text" id="f_nomFact" placeholder="Dupont">
+            </div>
+            <div class="field">
+              <label for="f_prenomFact">Prénom</label>
+              <input type="text" id="f_prenomFact" placeholder="Marie">
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_telFact">Téléphone</label>
+              <input type="tel" id="f_telFact" placeholder="01 00 00 00 00">
+            </div>
+            <div class="field">
+              <label for="f_emailFact">Email</label>
+              <input type="email" id="f_emailFact" placeholder="ap@mirakl.com">
+            </div>
+          </div>
+
+          <!-- Partie 5 : Le maître d'apprentissage -->
+          <p class="fiche-part">5 — Le maître d'apprentissage</p>
+          <div class="field">
+            <label for="f_fonctionMaitre">Fonction <span class="req">*</span></label>
+            <input type="text" id="f_fonctionMaitre" placeholder="Manager, People Ops EMEA and C&B">
+            <span class="field-error" id="err_f_fonctionMaitre">Obligatoire</span>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_nomMaitre">Nom <span class="req">*</span></label>
+              <input type="text" id="f_nomMaitre" placeholder="Fontaine">
+              <span class="field-error" id="err_f_nomMaitre">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="f_prenomMaitre">Prénom <span class="req">*</span></label>
+              <input type="text" id="f_prenomMaitre" placeholder="Mathilde">
+              <span class="field-error" id="err_f_prenomMaitre">Obligatoire</span>
+            </div>
+          </div>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_telMaitre">Portable <span class="opt">(optionnel)</span></label>
+              <input type="tel" id="f_telMaitre" placeholder="06 00 00 00 00">
+            </div>
+            <div class="field">
+              <label for="f_emailMaitre">Email <span class="req">*</span></label>
+              <input type="email" id="f_emailMaitre" placeholder="mathilde.fontaine@mirakl.com">
+              <span class="field-error" id="err_f_emailMaitre">Email invalide</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f_adresseVisite">Adresse pour la visite du tuteur pédagogique <span class="opt">(si différente de l'entreprise)</span></label>
+            <input type="text" id="f_adresseVisite" placeholder="Laisser vide si identique">
+          </div>
+
+          <!-- Partie 6 : L'apprenti(e) dans l'entreprise -->
+          <p class="fiche-part">6 — L'apprenti(e) dans l'entreprise</p>
+          <div class="inner-row">
+            <div class="field">
+              <label for="f_dateDebutContrat">Date de début du contrat <span class="req">*</span></label>
+              <input type="date" id="f_dateDebutContrat">
+              <span class="field-error" id="err_f_dateDebutContrat">Obligatoire</span>
+            </div>
+            <div class="field">
+              <label for="f_dateFinContrat">Date de fin du contrat <span class="req">*</span></label>
+              <input type="date" id="f_dateFinContrat">
+              <span class="field-error" id="err_f_dateFinContrat">Invalide</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f_service">Service accueillant l'apprenti(e) <span class="req">*</span></label>
+            <input type="text" id="f_service" placeholder="People Ops EMEA and C&B">
+            <span class="field-error" id="err_f_service">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="f_intitulePoste">Intitulé du poste <span class="req">*</span></label>
+            <input type="text" id="f_intitulePoste" placeholder="People Operations Specialist">
+            <span class="field-error" id="err_f_intitulePoste">Obligatoire</span>
+          </div>
+          <div class="field">
+            <label for="f_missions">Description succincte des missions <span class="req">*</span></label>
+            <textarea id="f_missions" placeholder="- Gérer les processus d'onboarding...&#10;- Préparer et suivre les documents administratifs...&#10;- ..."></textarea>
+            <span class="field-error" id="err_f_missions">Obligatoire</span>
+          </div>
+
         </div>
       </div>
 
@@ -824,18 +1417,114 @@ select {
         <polyline points="9 15 12 12 15 15"/>
       </svg>
     </div>
-    <h2 id="pdfTitle">Votre PDF est prêt !</h2>
-    <p id="pdfDesc">Toutes les informations ont été renseignées. Téléchargez votre document <strong>modifiable</strong> — vous pourrez encore corriger n'importe quel champ dans Adobe Reader ou tout autre lecteur PDF.</p>
-    <button class="btn-download" id="btnDownload" onclick="downloadPDF()">
-      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Télécharger le PDF</span>
-    </button>
+    <h2 id="pdfTitle">Vos documents sont prêts !</h2>
+    <p id="pdfDesc">Toutes les informations ont été renseignées. Téléchargez vos documents <strong>modifiables</strong> — vous pourrez encore corriger n'importe quel champ dans Adobe Reader ou tout autre lecteur PDF.</p>
+    <div id="downloadList" class="download-list"></div>
     <div class="share-actions" style="margin-top:24px">
+      <button class="btn-secondary" id="btnDownloadAll" onclick="downloadAllPDFs()" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Tout télécharger
+      </button>
       <button class="btn-secondary" onclick="restartFlow()">
         <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
         Nouveau dossier
       </button>
     </div>
+
+    <!-- Bloc envoi automatique à l'entreprise -->
+    <div id="sendBox" style="display:none; margin-top:28px; text-align:left; background:var(--white); border:1px solid var(--gray-200); border-radius:14px; padding:22px 24px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+        <div style="width:34px;height:34px;border-radius:8px;background:var(--purple-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <span style="font-size:14px;font-weight:700;color:var(--gray-900);">Envoyer le CERFA à l'entreprise</span>
+      </div>
+      <p style="font-size:13px;color:var(--gray-500);margin:8px 0 16px 44px;">Le document sera envoyé automatiquement à :</p>
+      <div style="margin-left:44px;margin-bottom:18px;">
+        <span id="sendToEmail" style="font-size:13px;font-weight:600;color:var(--purple);background:var(--purple-50);padding:5px 12px;border-radius:20px;"></span>
+      </div>
+
+      <!-- État : bouton de confirmation -->
+      <div id="sendStateConfirm" style="margin-left:44px;">
+        <button onclick="sendCerfaToEntreprise()" style="height:42px;padding:0 22px;background:var(--purple);color:white;border:none;border-radius:var(--radius);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.18s;display:inline-flex;align-items:center;gap:7px;box-shadow:0 4px 12px rgba(139,63,240,0.25);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirmer l'envoi
+        </button>
+      </div>
+
+      <!-- État : envoi en cours -->
+      <div id="sendStateLoading" style="display:none;margin-left:44px;display:none;align-items:center;gap:10px;">
+        <div style="width:18px;height:18px;border:2px solid var(--gray-200);border-top-color:var(--purple);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <span style="font-size:13px;color:var(--gray-500);">Envoi en cours...</span>
+      </div>
+
+      <!-- État : succès -->
+      <div id="sendStateSuccess" style="display:none;margin-left:44px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:26px;height:26px;border-radius:50%;background:#d1fde0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span style="font-size:13px;font-weight:600;color:var(--green);">Envoyé avec succès !</span>
+        </div>
+      </div>
+
+      <!-- État : erreur -->
+      <div id="sendStateError" style="display:none;margin-left:44px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div style="width:26px;height:26px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <span style="font-size:13px;font-weight:600;color:var(--error);">Échec de l'envoi</span>
+        </div>
+        <button onclick="retrySend()" style="height:38px;padding:0 18px;background:none;border:1.5px solid var(--gray-200);border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;color:var(--gray-600);cursor:pointer;">Réessayer</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Modal : Méthode de remplissage ── -->
+<div id="modalMethod" class="method-overlay hidden" onclick="handleOverlayClick(event)">
+  <div class="method-box">
+    <h2>Comment remplir le formulaire ?</h2>
+    <p>Choisissez comment saisir les informations de l'entreprise et de la formation.</p>
+
+    <div class="method-options" id="methodOptions">
+      <button class="method-card manual" onclick="chooseManual()">
+        <div class="method-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+        <div class="method-text">
+          <strong>Remplir manuellement</strong>
+          <span>Saisir les informations champ par champ</span>
+        </div>
+      </button>
+
+      <button class="method-card doc" onclick="chooseDocument()">
+        <div class="method-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M9 15l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="method-text">
+          <strong>Renseigner un document</strong>
+          <span>Importer un PDF — les champs sont pré-remplis automatiquement</span>
+        </div>
+      </button>
+    </div>
+
+    <div class="method-loading" id="methodLoading">
+      <div class="spinner"></div>
+      <strong id="loadingTitle">Analyse en cours...</strong>
+      <p id="loadingMsg">Extraction du texte du document</p>
+    </div>
+
+    <input type="file" id="docFileInput" accept=".pdf" style="display:none" onchange="handleDocUpload(this)">
   </div>
 </div>
 
@@ -848,6 +1537,11 @@ select {
    n'est envoyée à un serveur, tout reste côté client.
 ============================================================ */
 
+/* ── Config EmailJS ── À remplir avec tes identifiants emailjs.com ── */
+const EMAILJS_PUBLIC_KEY  = 'VOTRE_CLE_PUBLIQUE';
+const EMAILJS_SERVICE_ID  = 'VOTRE_SERVICE_ID';
+const EMAILJS_TEMPLATE_ID = 'VOTRE_TEMPLATE_ID';
+
 const $ = id => document.getElementById(id);
 const getVal = id => { const e=$(id); return e ? e.value.trim() : ''; };
 const setVal = (id, v) => { const e=$(id); if(e && v!=null) e.value = v; };
@@ -857,10 +1551,12 @@ const setRadio = (name, v) => { const e=document.querySelector(`input[name="${na
 /* ------- État global ------- */
 const STATE = {
   role: 'apprenti',  // 'apprenti' | 'entreprise'
-  docType: '',       // 'convention' | 'apprentissage' | 'both'
+  docTypes: [],      // sous-ensemble non vide de ['convention','apprentissage','fiche']
   apprentiData: null,
   entrepriseData: null,
+  apprentiPrefill: null,
   shareUrl: '',
+  pdfs: {},          // { convention: bytes, apprentissage: bytes, fiche: bytes } — un par document généré
 };
 
 /* ------- Encodage / décodage URL ------- */
@@ -885,17 +1581,41 @@ function showView(id) {
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function needsEntreprise() { return ['apprentissage','both'].includes(STATE.docType); }
+function needsConvention()   { return STATE.docTypes.includes('convention'); }
+function needsCerfa()        { return STATE.docTypes.includes('apprentissage'); }
+function needsFicheDoc()     { return STATE.docTypes.includes('fiche'); }
+function needsEntreprise()   { return STATE.docTypes.length > 0; }
+
+// Année universitaire par défaut (bascule au 1er août)
+function defaultAnneeUniv() {
+  const d = new Date();
+  const y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+  return `${y}-${y+1}`;
+}
+
+const DOC_LABELS = {
+  convention:'Convention de formation',
+  apprentissage:"Contrat d'apprentissage",
+  fiche:'Fiche de liaison CFA / Employeur'
+};
 
 /* ============================================================
-   Sélection du type de document (côté apprenti)
+   Sélection des types de documents (multi-choix, côté apprenti)
 ============================================================ */
+function getSelectedDocTypes() {
+  return Array.from(document.querySelectorAll('input[name="docType"]:checked')).map(e => e.value);
+}
+
+function updateStartBtn() {
+  $('btnStart').disabled = getSelectedDocTypes().length === 0;
+}
+
 function startForm() {
-  const type = getRadio('docType');
-  if (!type) { alert('Veuillez sélectionner un type de document.'); return; }
-  STATE.docType = type;
+  const types = getSelectedDocTypes();
+  if (types.length === 0) { alert('Veuillez sélectionner au moins un document.'); return; }
+  STATE.docTypes = types;
   STATE.role = 'entreprise';
-  renderForm();
+  $('modalMethod').classList.remove('hidden');
 }
 
 function goBack() {
@@ -907,50 +1627,64 @@ function goBack() {
    Affichage du formulaire selon le rôle
 ============================================================ */
 function renderForm() {
-  const labels = {
-    convention:'Convention de formation',
-    apprentissage:"Contrat d'apprentissage",
-    both:'Convention + Contrat d\'apprentissage'
-  };
-  $('docBadge').textContent = labels[STATE.docType] || '';
+  $('docBadge').textContent = STATE.docTypes.map(t => DOC_LABELS[t]).join(' + ') || '';
 
   const isApprenti = STATE.role === 'apprenti';
   const isEntreprise = STATE.role === 'entreprise';
+  const cerfa = needsCerfa(), conv = needsConvention(), fiche = needsFicheDoc();
 
-  document.querySelectorAll('.section-block').forEach(s => s.style.display = '');
-  const empSec  = $('sectionEmployeur');
-  const maiSec  = $('sectionMaitre');
-  const formSec = $('sectionFormation');
+  document.querySelectorAll('.section-block').forEach(s => s.style.display = 'none');
+
+  // Champs partagés conditionnels : visibles selon les documents sélectionnés
+  document.querySelectorAll('.appx').forEach(el => el.style.display = cerfa ? '' : 'none');
+  document.querySelectorAll('.convx').forEach(el => el.style.display = conv ? '' : 'none');
+
   const formGrid = $('formGrid');
 
   if (isEntreprise) {
-    // Entreprise remplit en premier : formation + employeur + maître
-    document.querySelectorAll('.section-block').forEach(s => {
-      if (!['sectionFormation','sectionEmployeur','sectionMaitre'].includes(s.id)) s.style.display = 'none';
-    });
-    formSec.style.display = 'block';
-    formSec.classList.add('full');
-    empSec.style.display  = 'block';
-    maiSec.style.display  = 'block';
+    // Entreprise remplit en premier + pré-remplissage apprenti (optionnel)
+    const appSec = $('sectionApprenti');
+    appSec.style.display = 'block';
+    appSec.classList.add('full');
+    $('employerHintBanner').classList.add('show');
+    $('apprentiPrefillBanner').classList.remove('show');
+    $('apprentiPrefillBanner').style.display = 'none';
+
+    if (cerfa || conv) {
+      $('sectionFormation').style.display = 'block';
+      $('sectionFormation').classList.add('full');
+      $('sectionEmployeur').style.display = 'block';
+    }
+    if (cerfa || conv) $('sectionMaitre').style.display = 'block';
+    if (conv) {
+      $('sectionCFA').style.display = 'block';
+      $('sectionConvPedago').style.display = 'block';
+      $('sectionConvFinance').style.display = 'block';
+    }
+    if (fiche) {
+      $('sectionFiche').style.display = 'block';
+      if (!getVal('f_annee')) setVal('f_annee', defaultAnneeUniv());
+    }
+
     formGrid.classList.remove('single');
     $('formTitle').textContent = "Informations de l'entreprise";
-    $('certLabel').textContent = "Je certifie que les informations renseignées sont exactes. Le lien généré sera transmis à l'apprenti(e) pour qu'il/elle complète sa partie.";
+    $('certLabel').textContent = "Je certifie que les informations renseignées sont exactes. Le lien généré sera transmis à l'apprenti(e) pour qu'il/elle complète ou valide sa partie.";
     $('submitLabel').textContent = "Générer le lien pour l'apprenti(e)";
     $('recapCard').style.display = 'none';
     $('btnBack').style.display = '';
   } else if (isApprenti) {
     // Apprenti arrive via le lien : uniquement sa section personnelle
-    empSec.style.display  = 'none';
-    maiSec.style.display  = 'none';
-    formSec.style.display = 'none';
-    formSec.classList.remove('full');
+    $('sectionApprenti').style.display = 'block';
+    $('sectionApprenti').classList.remove('full');
+    $('employerHintBanner').classList.remove('show');
     formGrid.classList.add('single');
     $('formTitle').textContent = 'Vos informations (apprenti(e))';
-    $('certLabel').textContent = "Je certifie que mes informations sont exactes. Le PDF sera généré après validation.";
-    $('submitLabel').textContent = 'Générer le PDF';
+    $('certLabel').textContent = "Je certifie que mes informations sont exactes. Le(s) PDF seront générés après validation.";
+    $('submitLabel').textContent = 'Générer le(s) PDF';
     $('recapCard').style.display = 'block';
     $('btnBack').style.display = 'none';
     fillRecap();
+    if (STATE.apprentiPrefill) applyApprentiPrefill(STATE.apprentiPrefill);
   }
 
   showView('viewForm');
@@ -960,14 +1694,19 @@ function renderForm() {
 function fillRecap() {
   if (!STATE.entrepriseData) return;
   const d = STATE.entrepriseData;
-  const items = [
-    ['Entreprise', d.raisonSociale||'—'],
-    ['Formation', d.intitule||'—'],
-    ['Diplôme visé', d.diplomeVise||'—'],
-    ['Du / Au', `${d.dateDebut||'—'} → ${d.dateFin||'—'}`],
-    ['Durée', d.duree ? `${d.duree} h` : '—'],
-    ['Maître d\'apprentissage', `${d.prenomMaitre||''} ${(d.nomMaitre||'').toUpperCase()}`.trim()||'—'],
-  ];
+  const items = [];
+  if (needsCerfa() || needsConvention()) {
+    items.push(['Entreprise', d.raisonSociale||'—']);
+    items.push(['Formation', d.intitule||'—']);
+    items.push(['Diplôme visé', d.diplomeVise||'—']);
+    items.push(['Du / Au', `${fmtDate(d.dateDebut)||'—'} → ${fmtDate(d.dateFin)||'—'}`]);
+    if (needsCerfa()) items.push(['Maître d\'apprentissage', `${d.prenomMaitre||''} ${(d.nomMaitre||'').toUpperCase()}`.trim()||'—']);
+  }
+  if (needsFicheDoc()) {
+    items.push(['Entreprise (fiche)', d.f_denomination||'—']);
+    items.push(['Poste', d.f_intitulePoste||'—']);
+    items.push(['Contrat du/au', `${fmtDate(d.f_dateDebutContrat)||'—'} → ${fmtDate(d.f_dateFinContrat)||'—'}`]);
+  }
   $('recapGrid').innerHTML = items.map(([l,v]) =>
     `<div class="recap-item"><span class="lbl">${l}</span><span class="val">${v||'—'}</span></div>`
   ).join('');
@@ -979,24 +1718,34 @@ function fillRecap() {
 function toggleOPCO() {
   $('opcoField').style.display = getRadio('financement') === 'OPCO' ? 'flex' : 'none';
 }
+function toggleConvEquipement() {
+  $('convEquipementDetail').style.display = getRadio('conv_equipement') === 'Oui' ? 'block' : 'none';
+}
+function toggleConvMobilite() {
+  $('convMobiliteDetail').style.display = getRadio('conv_mobilite') === 'Oui' ? 'block' : 'none';
+}
 
 /* ============================================================
    Auto-format SIRET + reset erreurs
 ============================================================ */
-$('siret').addEventListener('input', function() {
-  // Format SIRET officiel : SIREN (3+3+3) + NIC (5)  →  "XXX XXX XXX XXXXX"
+// Format SIRET officiel : SIREN (3+3+3) + NIC (5)  →  "XXX XXX XXX XXXXX"
+function formatSiret() {
   const v = this.value.replace(/\D/g,'').substring(0,14);
   let out = v.slice(0,3);
   if (v.length > 3) out += ' ' + v.slice(3,6);
   if (v.length > 6) out += ' ' + v.slice(6,9);
   if (v.length > 9) out += ' ' + v.slice(9,14);
   this.value = out;
-});
+}
+$('siret').addEventListener('input', formatSiret);
+$('f_siret').addEventListener('input', formatSiret);
+$('cfa_siret').addEventListener('input', formatSiret);
 document.addEventListener('input', e => {
   const err = $(`err_${e.target.id}`);
   if (err && err.classList.contains('show') && e.target.value.trim()) {
     err.classList.remove('show'); e.target.classList.remove('err');
   }
+  e.target.classList.remove('prefilled');
 });
 
 /* ============================================================
@@ -1017,30 +1766,73 @@ function req(ids) {
   return ok;
 }
 
-function validateApprenti() {
+/* ── Validation côté apprenti : union des besoins des documents sélectionnés ── */
+function validateApprentiAll() {
   let ok = true;
-  if (!req(['nom','prenom','dateNaissance','lieuNaissance','nationalite','adresse','codePostal','ville','email','telephone','niveauFormation'])) ok=false;
+  if (!req(['nom','prenom','email','telephone'])) ok=false;
   if (getVal('email') && !validEmail(getVal('email'))) { showErr('email',true); ok=false; }
-  if (getVal('codePostal') && !validCP(getVal('codePostal'))) { showErr('codePostal',true); ok=false; }
-  if (!getRadio('civilite')) { alert('Veuillez sélectionner une civilité.'); ok=false; }
+  if (needsCerfa()) {
+    if (!req(['dateNaissance','lieuNaissance','nationalite','adresse','codePostal','ville','niveauFormation'])) ok=false;
+    if (getVal('codePostal') && !validCP(getVal('codePostal'))) { showErr('codePostal',true); ok=false; }
+    if (!getRadio('civilite')) { alert('Veuillez sélectionner une civilité.'); ok=false; }
+  }
   return ok;
 }
 
-function validateEntreprise() {
+/* ── Validation côté entreprise : union des besoins des documents sélectionnés ── */
+function validateEntrepriseAll() {
   let ok = true;
-  // Formation (déplacée côté entreprise pour apprentissage/both)
-  if (!req(['intitule','diplomeVise','dateDebut','dateFin','duree','lieuForm','cout'])) ok=false;
-  const d1=new Date(getVal('dateDebut')), d2=new Date(getVal('dateFin'));
-  if (getVal('dateDebut') && getVal('dateFin') && d2<=d1) { showErr('dateFin',true); ok=false; }
-  if (!getRadio('financement')) { alert('Veuillez sélectionner un mode de financement.'); ok=false; }
-  else if (getRadio('financement')==='OPCO' && !getVal('nomOPCO')) { showErr('nomOPCO',true); ok=false; }
-  // Employeur
-  if (!req(['raisonSociale','siret','codeNAF','effectif','adresseEmp','cpEmp','villeEmp','nomResp','prenomResp','emailEmp','telEmp'])) ok=false;
-  if (getVal('siret') && !validSiret(getVal('siret'))) { showErr('siret',true); ok=false; }
-  if (getVal('emailEmp') && !validEmail(getVal('emailEmp'))) { showErr('emailEmp',true); ok=false; }
-  if (getVal('cpEmp') && !validCP(getVal('cpEmp'))) { showErr('cpEmp',true); ok=false; }
-  if (!getRadio('typeEmployeur')) { alert("Veuillez sélectionner le type d'employeur."); ok=false; }
-  if (!req(['nomMaitre','prenomMaitre','dnMaitre','diplomeMaitre','dateDebutContrat','typeContrat'])) ok=false;
+
+  if (needsCerfa() || needsConvention()) {
+    // Formation
+    if (!req(['intitule','diplomeVise','dateDebut','dateFin','duree','lieuForm','cout'])) ok=false;
+    const d1=new Date(getVal('dateDebut')), d2=new Date(getVal('dateFin'));
+    if (getVal('dateDebut') && getVal('dateFin') && d2<=d1) { showErr('dateFin',true); ok=false; }
+    if (!getRadio('financement')) { alert('Veuillez sélectionner un mode de financement.'); ok=false; }
+    else if (getRadio('financement')==='OPCO' && !getVal('nomOPCO')) { showErr('nomOPCO',true); ok=false; }
+    // Employeur
+    if (!req(['raisonSociale','siret','codeNAF','effectif','adresseEmp','cpEmp','villeEmp','nomResp','prenomResp','emailEmp','telEmp'])) ok=false;
+    if (getVal('siret') && !validSiret(getVal('siret'))) { showErr('siret',true); ok=false; }
+    if (getVal('emailEmp') && !validEmail(getVal('emailEmp'))) { showErr('emailEmp',true); ok=false; }
+    if (getVal('cpEmp') && !validCP(getVal('cpEmp'))) { showErr('cpEmp',true); ok=false; }
+    if (!getRadio('typeEmployeur')) { alert("Veuillez sélectionner le type d'employeur."); ok=false; }
+  }
+
+  if (needsCerfa() || needsConvention()) {
+    if (!req(['dateDebutContrat','dateFinContrat'])) ok=false;
+    const cd1=new Date(getVal('dateDebutContrat')), cd2=new Date(getVal('dateFinContrat'));
+    if (getVal('dateDebutContrat') && getVal('dateFinContrat') && cd2<=cd1) { showErr('dateFinContrat',true); ok=false; }
+  }
+
+  if (needsCerfa()) {
+    if (!req(['nomMaitre','prenomMaitre','dnMaitre','diplomeMaitre','typeContrat'])) ok=false;
+  }
+
+  if (needsConvention()) {
+    if (!req(['cfa_denomination','cfa_siret','cfa_uai','cfa_cp','cfa_adresse','cfa_repNom','cfa_repPrenom'])) ok=false;
+    if (getVal('cfa_siret') && !validSiret(getVal('cfa_siret'))) { showErr('cfa_siret',true); ok=false; }
+    if (getVal('cfa_cp') && !validCP(getVal('cfa_cp'))) { showErr('cfa_cp',true); ok=false; }
+    if (getVal('cfa_contactEmail') && !validEmail(getVal('cfa_contactEmail'))) { showErr('cfa_contactEmail',true); ok=false; }
+    if (!req(['conv_modalites','conv_obtention','conv_a1_prix'])) ok=false;
+    if (!getRadio('conv_mandat')) { alert('Veuillez préciser si un mandat est donné au CFA.'); ok=false; }
+    if (!req(['conv_tribunal'])) ok=false;
+  }
+
+  if (needsFicheDoc()) {
+    if (!req(['f_annee','f_niveauAnnee','f_intitule',
+              'f_denomination','f_adresseEmp','f_cpEmp','f_villeEmp','f_siret','f_codeNAF',
+              'f_fonctionMaitre','f_nomMaitre','f_prenomMaitre','f_emailMaitre',
+              'f_dateDebutContrat','f_dateFinContrat','f_service','f_intitulePoste','f_missions'])) ok=false;
+    if (getVal('f_emailRetour') && !validEmail(getVal('f_emailRetour'))) { showErr('f_emailRetour',true); ok=false; }
+    else if (!getVal('f_emailRetour')) { showErr('f_emailRetour',true); ok=false; }
+    if (getVal('f_siret') && !validSiret(getVal('f_siret'))) { showErr('f_siret',true); ok=false; }
+    if (getVal('f_cpEmp') && !validCP(getVal('f_cpEmp'))) { showErr('f_cpEmp',true); ok=false; }
+    if (getVal('f_emailMaitre') && !validEmail(getVal('f_emailMaitre'))) { showErr('f_emailMaitre',true); ok=false; }
+    if (getVal('f_emailFact') && !validEmail(getVal('f_emailFact'))) { showErr('f_emailFact',true); ok=false; }
+    const fd1=new Date(getVal('f_dateDebutContrat')), fd2=new Date(getVal('f_dateFinContrat'));
+    if (getVal('f_dateDebutContrat') && getVal('f_dateFinContrat') && fd2<=fd1) { showErr('f_dateFinContrat',true); ok=false; }
+  }
+
   return ok;
 }
 
@@ -1049,7 +1841,7 @@ function validateEntreprise() {
 ============================================================ */
 function collectApprentiData() {
   return {
-    docType: STATE.docType,
+    docTypes: STATE.docTypes,
     civilite: getRadio('civilite'),
     nom: getVal('nom'),
     prenom: getVal('prenom'),
@@ -1092,32 +1884,120 @@ function collectEntrepriseData() {
     nomResp: getVal('nomResp'),
     prenomResp: getVal('prenomResp'),
     telEmp: getVal('telEmp'),
-    // Maître d'apprentissage
+    idcc: getVal('idcc'),
+    // Contrat & maître d'apprentissage
+    dateDebutContrat: getVal('dateDebutContrat'),
+    dateFinContrat: getVal('dateFinContrat'),
     nomMaitre: getVal('nomMaitre'),
     prenomMaitre: getVal('prenomMaitre'),
     dnMaitre: getVal('dnMaitre'),
     diplomeMaitre: getVal('diplomeMaitre'),
-    dateDebutContrat: getVal('dateDebutContrat'),
     typeContrat: getVal('typeContrat'),
+    // ── Convention — CFA / Organisme de formation ──
+    cfa_denomination: getVal('cfa_denomination'),
+    cfa_siret: getVal('cfa_siret'),
+    cfa_uai: getVal('cfa_uai'),
+    cfa_adresse: getVal('cfa_adresse'),
+    cfa_cp: getVal('cfa_cp'),
+    cfa_ville: getVal('cfa_ville'),
+    cfa_declaration: getVal('cfa_declaration'),
+    cfa_prefecture: getVal('cfa_prefecture'),
+    cfa_repNom: getVal('cfa_repNom'),
+    cfa_repPrenom: getVal('cfa_repPrenom'),
+    cfa_contactNom: getVal('cfa_contactNom'),
+    cfa_contactEmail: getVal('cfa_contactEmail'),
+    cfa_contactTel: getVal('cfa_contactTel'),
+    // ── Convention — pédagogie & suivi ──
+    conv_contenu: getVal('conv_contenu'),
+    conv_modalites: getVal('conv_modalites'),
+    conv_heuresDistance: getVal('conv_heuresDistance'),
+    conv_moyens: getVal('conv_moyens'),
+    conv_suivi: getVal('conv_suivi'),
+    conv_obtention: getVal('conv_obtention'),
+    conv_periodes: getVal('conv_periodes'),
+    // ── Convention — financement ──
+    conv_a1_prix: getVal('conv_a1_prix'), conv_a1_opco: getVal('conv_a1_opco'), conv_a1_partemp: getVal('conv_a1_partemp'),
+    conv_a2_prix: getVal('conv_a2_prix'), conv_a2_opco: getVal('conv_a2_opco'), conv_a2_partemp: getVal('conv_a2_partemp'),
+    conv_a3_prix: getVal('conv_a3_prix'), conv_a3_opco: getVal('conv_a3_opco'), conv_a3_partemp: getVal('conv_a3_partemp'),
+    conv_a4_prix: getVal('conv_a4_prix'), conv_a4_opco: getVal('conv_a4_opco'), conv_a4_partemp: getVal('conv_a4_partemp'),
+    conv_majorationHandicap: getVal('conv_majorationHandicap'),
+    conv_modulationUltramarin: getVal('conv_modulationUltramarin'),
+    conv_modulationDistance: getVal('conv_modulationDistance'),
+    conv_nuitees: getVal('conv_nuitees'),
+    conv_montantHeb: getVal('conv_montantHeb'),
+    conv_repas: getVal('conv_repas'),
+    conv_montantRest: getVal('conv_montantRest'),
+    conv_equipement: getRadio('conv_equipement'),
+    conv_equipementMontant: getVal('conv_equipementMontant'),
+    conv_equip_formation: $('conv_equip_formation') ? $('conv_equip_formation').checked : false,
+    conv_equip_info: $('conv_equip_info') ? $('conv_equip_info').checked : false,
+    conv_mobilite: getRadio('conv_mobilite'),
+    conv_mobiliteMontant: getVal('conv_mobiliteMontant'),
+    conv_reglement: getVal('conv_reglement'),
+    conv_mandat: getRadio('conv_mandat'),
+    conv_tribunal: getVal('conv_tribunal'),
+    // ── Fiche de liaison ──
+    f_annee: getVal('f_annee'),
+    f_emailRetour: getVal('f_emailRetour'),
+    f_niveauAnnee: getVal('f_niveauAnnee'),
+    f_intitule: getVal('f_intitule'),
+    f_denomination: getVal('f_denomination'),
+    f_adresseEmp: getVal('f_adresseEmp'),
+    f_cpEmp: getVal('f_cpEmp'),
+    f_villeEmp: getVal('f_villeEmp'),
+    f_siret: getVal('f_siret'),
+    f_opco: getVal('f_opco'),
+    f_codeNAF: getVal('f_codeNAF'),
+    f_idcc: getVal('f_idcc'),
+    f_nomFact: getVal('f_nomFact'),
+    f_prenomFact: getVal('f_prenomFact'),
+    f_telFact: getVal('f_telFact'),
+    f_emailFact: getVal('f_emailFact'),
+    f_fonctionMaitre: getVal('f_fonctionMaitre'),
+    f_nomMaitre: getVal('f_nomMaitre'),
+    f_prenomMaitre: getVal('f_prenomMaitre'),
+    f_telMaitre: getVal('f_telMaitre'),
+    f_emailMaitre: getVal('f_emailMaitre'),
+    f_adresseVisite: getVal('f_adresseVisite'),
+    f_dateDebutContrat: getVal('f_dateDebutContrat'),
+    f_dateFinContrat: getVal('f_dateFinContrat'),
+    f_service: getVal('f_service'),
+    f_intitulePoste: getVal('f_intitulePoste'),
+    f_missions: getVal('f_missions'),
   };
 }
 
 /* ============================================================
    Submit — comportement selon rôle et type de document
 ============================================================ */
+// Fait défiler la page jusqu'au premier champ en erreur et le met en évidence,
+// pour éviter qu'une validation échouée passe inaperçue sur un formulaire long.
+function scrollToFirstError() {
+  const firstErr = document.querySelector('.field-error.show') || document.querySelector('.err');
+  if (!firstErr || !firstErr.scrollIntoView) return;
+  firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const input = firstErr.classList.contains('field-error') ? firstErr.previousElementSibling : firstErr;
+  if (input && input.focus) input.focus({ preventScroll: true });
+}
+
 function submitForm() {
   const cert = $('certCheck'); const errCert = $('err_cert');
-  if (!cert.checked) { errCert.classList.add('show'); return; }
+  if (!cert.checked) {
+    errCert.classList.add('show');
+    if (errCert.scrollIntoView) errCert.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
   errCert.classList.remove('show');
 
   if (STATE.role === 'entreprise') {
-    if (!validateEntreprise()) return;
+    if (!validateEntrepriseAll()) { scrollToFirstError(); return; }
     STATE.entrepriseData = collectEntrepriseData();
+    STATE.apprentiPrefill = collectApprentiPrefill();
     buildShareLink();
     showView('viewShare');
   } else {
-    // Apprenti arrive via le lien → génère le PDF
-    if (!validateApprenti()) return;
+    // Apprenti arrive via le lien → génère le(s) PDF
+    if (!validateApprentiAll()) { scrollToFirstError(); return; }
     STATE.apprentiData = collectApprentiData();
     goToPDF();
   }
@@ -1127,7 +2007,7 @@ function submitForm() {
    Génération + affichage du lien à partager
 ============================================================ */
 function buildShareLink() {
-  const payload = { v:1, role:'apprenti', data: STATE.entrepriseData };
+  const payload = { v:1, role:'apprenti', docTypes: STATE.docTypes, data: STATE.entrepriseData, apprentiPrefill: STATE.apprentiPrefill };
   const encoded = encodeData(payload);
   const base = window.location.href.split('#')[0];
   STATE.shareUrl = `${base}#e=${encoded}`;
@@ -1137,9 +2017,10 @@ function buildShareLink() {
 
 function updateMailtoLink() {
   const email = ($('apprentiEmailInput') && $('apprentiEmailInput').value.trim()) || '';
-  const subject = encodeURIComponent("Contrat d'apprentissage — votre partie à compléter");
+  const docNames = STATE.docTypes.map(t => DOC_LABELS[t]).join(', ');
+  const subject = encodeURIComponent(`${docNames} — votre partie à compléter`);
   const body = encodeURIComponent(
-    `Bonjour,\n\nL'entreprise a rempli sa partie du contrat d'apprentissage. Veuillez compléter vos informations personnelles via ce lien :\n\n${STATE.shareUrl}\n\nLe PDF sera généré automatiquement après votre saisie.\n\nMerci !`
+    `Bonjour,\n\nL'entreprise a rempli sa partie pour : ${docNames}. Veuillez compléter vos informations personnelles via ce lien :\n\n${STATE.shareUrl}\n\nLe(s) PDF seront générés automatiquement après votre saisie.\n\nMerci !`
   );
   $('mailtoLink').href = `mailto:${email}?subject=${subject}&body=${body}`;
 }
@@ -1178,8 +2059,9 @@ function detectRoleFromUrl() {
   const payload = decodeData(enc);
   if (!payload || !payload.data) return false;
   STATE.role = 'apprenti';
-  STATE.docType = payload.data.docType || 'apprentissage';
+  STATE.docTypes = payload.docTypes || payload.data.docTypes || ['apprentissage'];
   STATE.entrepriseData = payload.data;
+  STATE.apprentiPrefill = payload.apprentiPrefill || null;
   renderForm();
   return true;
 }
@@ -1189,50 +2071,74 @@ function detectRoleFromUrl() {
 ============================================================ */
 function restartFlow() {
   STATE.role = 'entreprise';
-  STATE.docType = '';
+  STATE.docTypes = [];
   STATE.apprentiData = null;
   STATE.entrepriseData = null;
+  STATE.apprentiPrefill = null;
   STATE.shareUrl = '';
+  STATE.pdfs = {};
   // Nettoyer formulaire
-  document.querySelectorAll('input, select').forEach(el => {
+  document.querySelectorAll('input, select, textarea').forEach(el => {
     if (el.type === 'radio' || el.type === 'checkbox') el.checked = false;
     else el.value = '';
   });
   setVal('nationalite', 'Française');
+  $('sendBox').style.display = 'none';
+  updateStartBtn();
   history.replaceState(null, '', window.location.pathname);
   showView('viewSelect');
 }
 
 /* ============================================================
    PDF — Génération modifiable avec pdf-lib
-   - Pour les contrats d'apprentissage : on remplit le VRAI CERFA
-     officiel n°10103*14 (encodé en base64 dans cerfa_template.js).
-   - Pour la convention seule : on génère un PDF stylé maison.
+   - Contrat d'apprentissage : on remplit le VRAI CERFA officiel
+     n°10103*14 (encodé en base64 dans cerfa_template.js).
+   - Convention par apprentissage : modèle officiel (annexe n°2).
+   - Fiche de liaison : modèle CFA/Employeur.
+   Chaque document sélectionné est généré indépendamment et
+   listé dans #downloadList avec son propre bouton.
 ============================================================ */
-let _pdfBytes = null;
+const DOC_BUILDERS = {
+  convention:    { fn: () => buildConventionApprentissage(), label: 'Convention de formation par apprentissage', file: 'convention-formation-apprentissage' },
+  apprentissage: { fn: () => buildOfficialCerfa(),            label: "CERFA n°10103*14 — Contrat d'apprentissage", file: 'cerfa-10103-14_contrat-apprentissage' },
+  fiche:         { fn: () => buildFicheLiaison(),             label: 'Fiche de liaison CFA / Employeur',           file: 'fiche-de-liaison' },
+};
 
 async function goToPDF() {
   showView('viewPDFReady');
-  $('btnDownload').disabled = true;
-  $('btnDownload').querySelector('span').textContent = 'Génération en cours…';
-  try {
-    const isCerfa = ['apprentissage','both'].includes(STATE.docType);
-    _pdfBytes = isCerfa ? await buildOfficialCerfa() : await buildPDF();
-    if (isCerfa) {
-      $('pdfTitle').textContent = 'Votre CERFA officiel est prêt !';
-      $('pdfDesc').innerHTML = "Le formulaire <strong>CERFA n°10103*14</strong> (Contrat d'apprentissage) a été pré-rempli avec vos informations. Le document reste <strong>modifiable</strong> — tous les champs restent éditables dans Adobe Reader ou tout autre lecteur PDF.";
-    } else {
-      $('pdfTitle').textContent = 'Votre PDF est prêt !';
-      $('pdfDesc').innerHTML = "Toutes les informations ont été renseignées. Téléchargez votre document <strong>modifiable</strong> — vous pourrez encore corriger n'importe quel champ dans Adobe Reader ou tout autre lecteur PDF.";
-    }
-    $('btnDownload').disabled = false;
-    $('btnDownload').querySelector('span').textContent = 'Télécharger le PDF';
-  } catch(err) {
-    console.error(err);
-    alert('Erreur lors de la génération du PDF : ' + err.message);
-    $('btnDownload').querySelector('span').textContent = 'Erreur — réessayer';
-    $('btnDownload').disabled = false;
+  $('pdfTitle').textContent = STATE.docTypes.length > 1 ? 'Vos documents sont prêts !' : 'Votre document est prêt !';
+  $('pdfDesc').innerHTML = "Toutes les informations ont été renseignées. Téléchargez vos documents <strong>modifiables</strong> — vous pourrez encore corriger n'importe quel champ dans Adobe Reader ou tout autre lecteur PDF.";
+
+  const list = $('downloadList');
+  list.innerHTML = '';
+  STATE.pdfs = {};
+  $('btnDownloadAll').style.display = STATE.docTypes.length > 1 ? 'inline-flex' : 'none';
+
+  for (const type of STATE.docTypes) {
+    const row = document.createElement('div');
+    row.className = 'download-row';
+    row.innerHTML = `
+      <div class="dl-icon"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="dl-text"><strong>${DOC_BUILDERS[type].label}</strong><span id="dlstatus_${type}">Génération en cours...</span></div>
+      <button class="btn-dl-one" id="dlbtn_${type}" disabled onclick="downloadPDF('${type}')">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Télécharger
+      </button>`;
+    list.appendChild(row);
   }
+
+  for (const type of STATE.docTypes) {
+    try {
+      STATE.pdfs[type] = await DOC_BUILDERS[type].fn();
+      $(`dlstatus_${type}`).textContent = 'Prêt à télécharger';
+      $(`dlbtn_${type}`).disabled = false;
+    } catch (err) {
+      console.error(err);
+      $(`dlstatus_${type}`).textContent = 'Erreur : ' + err.message;
+    }
+  }
+
+  setupSendBox();
 }
 
 /* ============================================================
@@ -1350,7 +2256,7 @@ function getCerfaMapping(A, E) {
       // Date de début de la formation pratique chez l'employeur
       { src: E.dateDebutContrat || E.dateDebut, fields: ['Zone de texte 21_22','Zone de texte 21_23','Zone de texte 21_24'] },
       // Date de fin du contrat
-      { src: E.dateFin,               fields: ['Zone de texte 21_10','Zone de texte 21_11','Zone de texte 21_12'] },
+      { src: E.dateFinContrat || E.dateFin, fields: ['Zone de texte 21_10','Zone de texte 21_11','Zone de texte 21_12'] },
       // Date de début de formation en CFA
       { src: E.dateDebut,             fields: ['Zone de texte 21_25','Zone de texte 21_26','Zone de texte 21_27'] },
       // Date prévue de fin des épreuves
@@ -1423,244 +2329,22 @@ async function buildOfficialCerfa() {
   return await pdf.save({ updateFieldAppearances: true });
 }
 
-function downloadPDF() {
-  if (!_pdfBytes) return;
-  const blob = new Blob([_pdfBytes], { type: 'application/pdf' });
+function downloadPDF(type) {
+  const bytes = STATE.pdfs[type];
+  if (!bytes) return;
+  const blob = new Blob([bytes], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const label = STATE.docType === 'convention' ? 'convention'
-              : STATE.docType === 'both'        ? 'cerfa-10103-14_contrat-apprentissage'
-              :                                   'cerfa-10103-14_contrat-apprentissage';
   const apprenti = STATE.apprentiData || {};
-  const name = `${label}_${(apprenti.nom||'dossier').toLowerCase()}_${(apprenti.prenom||'').toLowerCase()}.pdf`.replace(/\s+/g,'-');
+  const name = `${DOC_BUILDERS[type].file}_${(apprenti.nom||'dossier').toLowerCase()}_${(apprenti.prenom||'').toLowerCase()}.pdf`.replace(/\s+/g,'-');
   a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/* ---------- Construction du PDF ---------- */
-async function buildPDF() {
-  const { PDFDocument, StandardFonts, rgb } = PDFLib;
-  const pdfDoc = await PDFDocument.create();
-  const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-  pdfDoc.setTitle("forma+ — " + (STATE.docType === 'convention' ? 'Convention de formation' : "Contrat d'apprentissage"));
-  pdfDoc.setAuthor('forma+');
-  pdfDoc.setProducer('forma+');
-
-  const A = STATE.apprentiData || {};
-  const E = STATE.entrepriseData || {};
-  const titleMap = {
-    convention: 'CONVENTION DE FORMATION PROFESSIONNELLE',
-    apprentissage: "CONTRAT D'APPRENTISSAGE — CERFA n°10103*09",
-    both: "CONTRAT D'APPRENTISSAGE & CONVENTION DE FORMATION"
-  };
-
-  // ===== Page principale =====
-  const page = pdfDoc.addPage([595, 842]); // A4
-  const W = 595, H = 842;
-  const M = 40;
-  let y = H - M;
-
-  // Bandeau d'en-tête
-  page.drawRectangle({ x:0, y:H-70, width:W, height:70, color: rgb(0.545, 0.247, 0.941) });
-  page.drawText('forma+', { x: M, y: H-44, size: 22, font: helvBold, color: rgb(1,1,1) });
-  page.drawText(titleMap[STATE.docType] || 'Dossier', { x: M, y: H-62, size: 9, font: helv, color: rgb(1,1,1) });
-
-  const today = new Date().toLocaleDateString('fr-FR');
-  page.drawText('Émis le ' + today, { x: W - M - 90, y: H-44, size: 9, font: helv, color: rgb(1,1,1) });
-
-  y = H - 92;
-
-  const form = pdfDoc.getForm();
-  let fieldCounter = 0;
-
-  /* Helper : titre de section */
-  function sectionTitle(label, color) {
-    page.drawRectangle({ x:M, y:y-4, width:W-2*M, height:22, color: color || rgb(0.96,0.94,0.99), borderWidth:0 });
-    page.drawText(label, { x: M+10, y: y+2, size: 10, font: helvBold, color: rgb(0.27, 0.13, 0.5) });
-    y -= 30;
-  }
-
-  /* Helper : champ éditable (TextField) */
-  function field(label, value, width, opts) {
-    opts = opts || {};
-    const fieldH = 22;
-    if (y - fieldH - 14 < 50) return; // protection
-    page.drawText(label, { x: opts.x ?? M, y: y, size: 7.5, font: helv, color: rgb(0.42, 0.39, 0.5) });
-    const tf = form.createTextField('f_' + (++fieldCounter));
-    tf.setText((value ?? '').toString());
-    tf.addToPage(page, {
-      x: opts.x ?? M,
-      y: y - fieldH - 2,
-      width: width,
-      height: fieldH,
-      borderColor: rgb(0.85, 0.82, 0.9),
-      borderWidth: 0.8,
-      backgroundColor: rgb(1,1,1),
-      textColor: rgb(0.12, 0.09, 0.18),
-      font: helv,
-    });
-  }
-
-  /* Helper : ligne de champs */
-  function row(cells, gap) {
-    gap = gap || 8;
-    const totalGap = gap * (cells.length - 1);
-    const w = (W - 2*M - totalGap) / cells.length;
-    cells.forEach((c, i) => {
-      field(c.label, c.value, w, { x: M + i*(w+gap) });
-    });
-    y -= 40;
-  }
-
-  // (Pas de pagination dynamique : tient sur 1 page pour la convention,
-  //  et la 2e page est ajoutée explicitement pour la section maître d'apprentissage.)
-
-  // ============ Section APPRENTI ============
-  sectionTitle("1. L'APPRENTI / STAGIAIRE");
-  row([
-    { label: 'CIVILITÉ',   value: A.civilite || '' },
-    { label: 'NOM',        value: (A.nom||'').toUpperCase() },
-    { label: 'PRÉNOM',     value: A.prenom || '' },
-  ]);
-  row([
-    { label: 'DATE DE NAISSANCE',  value: fmtDate(A.dateNaissance) },
-    { label: 'LIEU DE NAISSANCE',  value: A.lieuNaissance || '' },
-    { label: 'NATIONALITÉ',        value: A.nationalite || '' },
-  ]);
-  // Adresse pleine largeur
-  field('ADRESSE', A.adresse || '', W - 2*M);
-  y -= 40;
-  row([
-    { label: 'CODE POSTAL', value: A.codePostal || '' },
-    { label: 'VILLE',       value: A.ville || '' },
-    { label: 'TÉLÉPHONE',   value: A.telephone || '' },
-  ]);
-  row([
-    { label: 'EMAIL',                value: A.email || '' },
-    { label: 'NIVEAU DE FORMATION',  value: A.niveauFormation || '' },
-    { label: 'DERNIER DIPLÔME',      value: A.dernierDiplome || '' },
-  ]);
-
-  // ============ Section FORMATION ============
-  sectionTitle('2. LA FORMATION');
-  field('INTITULÉ DE LA FORMATION', A.intitule || '', W - 2*M);
-  y -= 40;
-  row([
-    { label: 'DIPLÔME / TITRE VISÉ', value: A.diplomeVise || '' },
-    { label: 'CODE RNCP',            value: A.codeRNCP || '' },
-    { label: 'DURÉE (HEURES)',       value: A.duree ? A.duree + ' h' : '' },
-  ]);
-  row([
-    { label: 'DATE DE DÉBUT', value: fmtDate(A.dateDebut) },
-    { label: 'DATE DE FIN',   value: fmtDate(A.dateFin) },
-    { label: 'LIEU DE FORMATION', value: A.lieuForm || '' },
-  ]);
-  row([
-    { label: 'FINANCEMENT', value: A.financement || '' },
-    { label: 'OPCO',        value: A.nomOPCO || '—' },
-    { label: 'COÛT TOTAL (€)', value: A.cout ? A.cout + ' €' : '' },
-  ]);
-
-  // ============ Section ENTREPRISE (si applicable) ============
-  if (needsEntreprise() && STATE.entrepriseData) {
-    sectionTitle("3. L'EMPLOYEUR");
-    row([
-      { label: 'RAISON SOCIALE', value: E.raisonSociale || '' },
-      { label: 'SIRET',          value: E.siret || '' },
-      { label: 'CODE NAF / APE', value: E.codeNAF || '' },
-    ]);
-    row([
-      { label: "TYPE D'EMPLOYEUR", value: E.typeEmployeur || '' },
-      { label: 'EFFECTIF',         value: E.effectif || '' },
-      { label: 'TÉLÉPHONE',        value: E.telEmp || '' },
-    ]);
-    field('ADRESSE', E.adresseEmp || '', W - 2*M);
-    y -= 40;
-    row([
-      { label: 'CODE POSTAL', value: E.cpEmp || '' },
-      { label: 'VILLE',       value: E.villeEmp || '' },
-      { label: 'EMAIL',       value: E.emailEmp || '' },
-    ]);
-    row([
-      { label: 'RESPONSABLE (NOM)',    value: (E.nomResp||'').toUpperCase() },
-      { label: 'RESPONSABLE (PRÉNOM)', value: E.prenomResp || '' },
-      { label: 'TYPE DE CONTRAT',      value: E.typeContrat || '' },
-    ]);
-
-    // Si on dépasse la page, on ajoute une seconde page pour le maître
-    let p2 = page;
-    if (y < 220) {
-      p2 = pdfDoc.addPage([W, H]);
-      p2.drawRectangle({ x:0, y:H-26, width:W, height:26, color: rgb(0.545, 0.247, 0.941) });
-      p2.drawText('forma+  —  ' + (titleMap[STATE.docType]||''), { x: M, y: H-18, size: 8, font: helvBold, color: rgb(1,1,1) });
-      y = H - 60;
-    }
-
-    /* Sur p2 si besoin, on dessine la section Maître */
-    function titleOn(p, label) {
-      p.drawRectangle({ x:M, y:y-4, width:W-2*M, height:22, color: rgb(0.96,0.94,0.99) });
-      p.drawText(label, { x: M+10, y: y+2, size: 10, font: helvBold, color: rgb(0.27, 0.13, 0.5) });
-      y -= 30;
-    }
-    function fieldOn(p, label, value, x, w) {
-      const fh = 22;
-      p.drawText(label, { x: x, y: y, size: 7.5, font: helv, color: rgb(0.42, 0.39, 0.5) });
-      const tf = form.createTextField('f_' + (++fieldCounter));
-      tf.setText((value ?? '').toString());
-      tf.addToPage(p, { x, y: y - fh - 2, width: w, height: fh,
-        borderColor: rgb(0.85,0.82,0.9), borderWidth: 0.8,
-        backgroundColor: rgb(1,1,1), textColor: rgb(0.12,0.09,0.18), font: helv });
-    }
-    function rowOn(p, cells) {
-      const gap = 8, w = (W - 2*M - gap*(cells.length-1))/cells.length;
-      cells.forEach((c,i) => fieldOn(p, c.label, c.value, M + i*(w+gap), w));
-      y -= 40;
-    }
-
-    titleOn(p2, "4. LE MAÎTRE D'APPRENTISSAGE");
-    rowOn(p2, [
-      { label: 'NOM',     value: (E.nomMaitre||'').toUpperCase() },
-      { label: 'PRÉNOM',  value: E.prenomMaitre || '' },
-      { label: 'DATE DE NAISSANCE', value: fmtDate(E.dnMaitre) },
-    ]);
-    fieldOn(p2, 'DIPLÔME / QUALIFICATION', E.diplomeMaitre || '', M, W - 2*M);
-    y -= 40;
-    rowOn(p2, [
-      { label: 'DATE DE DÉBUT DU CONTRAT', value: fmtDate(E.dateDebutContrat) },
-      { label: 'TYPE DE CONTRAT', value: E.typeContrat || '' },
-    ]);
-
-    // Zone signatures
-    y -= 20;
-    titleOn(p2, 'SIGNATURES');
-    rowOn(p2, [
-      { label: "SIGNATURE DE L'APPRENTI", value: '' },
-      { label: "SIGNATURE DE L'EMPLOYEUR", value: '' },
-    ]);
-    rowOn(p2, [
-      { label: "FAIT À", value: E.villeEmp || '' },
-      { label: 'LE',     value: today },
-    ]);
-
-  } else {
-    // Convention seule : signatures sur la page principale si place
-    y -= 10;
-    sectionTitle('SIGNATURES');
-    row([
-      { label: "SIGNATURE DE L'APPRENANT", value: '' },
-      { label: 'SIGNATURE DE FORMA+', value: '' },
-    ]);
-    row([
-      { label: 'FAIT À', value: A.ville || '' },
-      { label: 'LE',     value: today },
-    ]);
-  }
-
-  return await pdfDoc.save();
+function downloadAllPDFs() {
+  STATE.docTypes.forEach((type, i) => setTimeout(() => downloadPDF(type), i * 300));
 }
 
 function fmtDate(d) {
@@ -1669,6 +2353,925 @@ function fmtDate(d) {
   const parts = d.split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return d;
+}
+
+/* ---------- Construction du PDF — Convention de formation par apprentissage ----------
+   Fidèle au modèle officiel (Annexe n°2 — Ministère du Travail), Livres II et III
+   de la sixième partie du code du travail. ---------- */
+async function buildConventionApprentissage() {
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const helv     = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const helvObl  = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  pdfDoc.setTitle('Convention de formation par apprentissage');
+  pdfDoc.setAuthor('forma+');
+  pdfDoc.setProducer('forma+');
+
+  const A = STATE.apprentiData || {};
+  const E = STATE.entrepriseData || {};
+
+  const PW = 595, PH = 842, ML = 52, MR = 52, MB = 55;
+  const CW = PW - ML - MR;
+
+  let page = pdfDoc.addPage([PW, PH]);
+  let y = PH - 46;
+
+  const BLK  = rgb(0.05, 0.05, 0.05);
+  const DGRY = rgb(0.35, 0.35, 0.35);
+  const LGRY = rgb(0.72, 0.72, 0.72);
+  const BAND = rgb(0.91, 0.91, 0.91);
+  const HBG  = rgb(0.93, 0.93, 0.95);
+
+  function newPage() { page = pdfDoc.addPage([PW, PH]); y = PH - 46; }
+  function guard(h) { if (y - h < MB) newPage(); }
+
+  function wrap(text, font, size, maxW) {
+    const words = (text || '').split(/\s+/);
+    const lines = []; let line = '';
+    for (const w of words) {
+      const cand = line ? line + ' ' + w : w;
+      if (font.widthOfTextAtSize(cand, size) > maxW && line) { lines.push(line); line = w; }
+      else line = cand;
+    }
+    if (line) lines.push(line);
+    return lines.length ? lines : [''];
+  }
+
+  function txt(text, size, font, color, x) {
+    guard((size||10)+5);
+    page.drawText(text||'', { x: x!==undefined?x:ML, y, size: size||10, font: font||helv, color: color||BLK });
+    y -= ((size||10)+5);
+  }
+  function para(text, size, font, color, indent) {
+    const s = size||10, lh = s+5;
+    for (const l of wrap(text, font||helv, s, CW-(indent||0))) {
+      guard(lh);
+      page.drawText(l, { x: ML+(indent||0), y, size: s, font: font||helv, color: color||BLK });
+      y -= lh;
+    }
+  }
+  function gap(n) { y -= (n||8); }
+  function hline(thick, color) {
+    guard(10);
+    page.drawLine({ start:{x:ML,y}, end:{x:PW-MR,y}, thickness: thick||0.5, color: color||LGRY });
+    y -= 8;
+  }
+  function kv(label, value, indent) {
+    const ix = indent||0;
+    const lblTxt = label + ' : ';
+    const lw = helvBold.widthOfTextAtSize(lblTxt, 10);
+    const val = (value!=null && value!=='') ? String(value) : null;
+    const valLines = wrap(val || '...', helv, 10, CW-ix-lw-2);
+    guard(16);
+    page.drawText(lblTxt, { x: ML+ix, y, size:10, font: helvBold, color: BLK });
+    page.drawText(valLines[0], { x: ML+ix+lw, y, size:10, font: helv, color: val?BLK:LGRY });
+    y -= 16;
+    for (let i=1;i<valLines.length;i++) {
+      guard(16);
+      page.drawText(valLines[i], { x: ML+ix+lw, y, size:10, font: helv, color: val?BLK:LGRY });
+      y -= 16;
+    }
+  }
+  function articleHead(num, title) {
+    gap(10); guard(22);
+    page.drawRectangle({ x: ML, y: y-3, width: CW, height: 19, color: BAND });
+    page.drawText('ARTICLE '+num+' — '+title, { x: ML+8, y: y+2, size:10, font: helvBold, color: BLK });
+    y -= 24; gap(5);
+  }
+  function checkbox(checked, label) {
+    guard(14);
+    page.drawRectangle({ x: ML, y: y-1, width:9, height:9, borderColor: BLK, borderWidth:0.8, color: rgb(1,1,1) });
+    if (checked) page.drawText('X', { x: ML+1.3, y: y-0.5, size:8, font: helvBold, color: BLK });
+    const lines = wrap(label, helv, 9.5, CW-16);
+    page.drawText(lines[0], { x: ML+15, y: y, size:9.5, font: helv, color: BLK });
+    y -= 13;
+    for (let i=1;i<lines.length;i++) { guard(13); page.drawText(lines[i], { x: ML+15, y, size:9.5, font: helv, color: BLK }); y -= 13; }
+  }
+  const eur = v => (v!=null && v!=='' && !isNaN(parseFloat(v))) ? parseFloat(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(/[  ]/g,' ')+' €' : '';
+  const num = v => (v!=null && v!=='' && !isNaN(parseFloat(v))) ? parseFloat(v) : null;
+
+  /* ── TITRE ── */
+  page.drawRectangle({ x: ML, y: y-40, width: CW, height: 40, color: BAND });
+  page.drawLine({ start:{x:ML,y:y},    end:{x:PW-MR,y:y},    thickness:0.8, color:rgb(0.45,0.45,0.45) });
+  page.drawLine({ start:{x:ML,y:y-40}, end:{x:PW-MR,y:y-40}, thickness:0.8, color:rgb(0.45,0.45,0.45) });
+  const t1 = 'CONVENTION DE FORMATION PAR APPRENTISSAGE';
+  page.drawText(t1, { x:(PW-helvBold.widthOfTextAtSize(t1,12))/2, y:y-16, size:12, font:helvBold, color:BLK });
+  const t2 = 'Livres II et III de la sixième partie du code du travail';
+  page.drawText(t2, { x:(PW-helv.widthOfTextAtSize(t2,9))/2, y:y-30, size:9, font:helv, color:DGRY });
+  y -= 54;
+
+  /* ── PARTIES ── */
+  para('La présente convention est conclue entre :', 10, helvBold);
+  gap(8);
+
+  txt('LE CENTRE DE FORMATION D’APPRENTIS, ci-après « CFA »,', 10, helvBold);
+  gap(2);
+  const cfaAdr = [E.cfa_adresse, [E.cfa_cp, E.cfa_ville].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  kv('Désignation', E.cfa_denomination, 8);
+  kv('Adresse', cfaAdr || null, 8);
+  kv('SIRET', E.cfa_siret, 8);
+  kv('N° UAI', E.cfa_uai, 8);
+  kv('N° déclaration d’activité', E.cfa_declaration, 8);
+  kv('Préfecture de région', E.cfa_prefecture, 8);
+  const cfaRep = [E.cfa_repPrenom, E.cfa_repNom ? E.cfa_repNom.toUpperCase() : ''].filter(Boolean).join(' ');
+  kv('Représenté par', cfaRep || null, 8);
+  if (E.cfa_contactNom || E.cfa_contactEmail || E.cfa_contactTel) {
+    kv('Contact opérationnel', [E.cfa_contactNom, E.cfa_contactEmail, E.cfa_contactTel].filter(Boolean).join(' — '), 8);
+  }
+  gap(10);
+
+  txt('L’ENTREPRISE', 10, helvBold);
+  gap(2);
+  const empAdr = [E.adresseEmp, [E.cpEmp, E.villeEmp].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  kv('Désignation', E.raisonSociale, 8);
+  kv('Adresse', empAdr || null, 8);
+  kv('SIRET', E.siret, 8);
+  kv('IDCC', E.idcc, 8);
+  const empRep = [E.prenomResp, E.nomResp ? E.nomResp.toUpperCase() : ''].filter(Boolean).join(' ');
+  kv('Représentée par', empRep || null, 8);
+  kv('Opérateur de compétences (OPCO)', E.nomOPCO, 8);
+  kv('Contact opérationnel', [empRep, E.emailEmp, E.telEmp].filter(Boolean).join(' — ') || null, 8);
+  gap(8);
+
+  hline(0.8, rgb(0.4,0.4,0.4));
+  para('est conclue la présente convention, en application des dispositions des Livres II et III de la sixième partie du code du travail.', 9.5, helvObl, DGRY);
+  gap(4);
+
+  /* ── ARTICLE 1 : OBJET ── */
+  articleHead(1, 'OBJET DE LA CONVENTION');
+  para(`Le CFA ${E.cfa_denomination || '...'} organise une action de formation par apprentissage au sens de l’article L. 6313-6 du code du travail.`);
+  gap(6);
+  const diplomeTxt = [E.diplomeVise, E.codeRNCP ? `(RNCP ${E.codeRNCP})` : ''].filter(Boolean).join(' ');
+  kv('Intitulé et objectif de l’action', diplomeTxt || null, 8);
+  if (E.conv_contenu) kv('Contenu de l’action', E.conv_contenu, 8);
+  const dateD = fmtDate(E.dateDebut), dateF = fmtDate(E.dateFin);
+  kv('Durée de l’action de formation', dateD && dateF ? `du ${dateD} au ${dateF}` : null, 8);
+  kv('Lieu principal de la formation', E.lieuForm, 8);
+  if (E.conv_periodes) kv('Périodes de réalisation en entreprise et en CFA', E.conv_periodes, 8);
+  gap(4); hline();
+
+  /* ── ARTICLE 2 : DÉROULEMENT / SUIVI / OBTENTION ── */
+  articleHead(2, 'MODALITÉS DE DÉROULEMENT, DE SUIVI ET D’OBTENTION DU DIPLÔME OU DU TITRE');
+  kv('Modalités de déroulement', E.conv_modalites, 8);
+  kv('Nombre d’heures total', E.duree ? `${E.duree} heures` : null, 8);
+  kv('Dont heures à distance', E.conv_heuresDistance ? `${E.conv_heuresDistance} heures` : null, 8);
+  if (E.conv_moyens) kv('Moyens prévus', E.conv_moyens, 8);
+  if (E.conv_suivi) kv('Modalités de suivi', E.conv_suivi, 8);
+  kv('Modalités d’obtention du diplôme ou du titre', E.conv_obtention, 8);
+  gap(4); hline();
+
+  /* ── ARTICLE 3 : BÉNÉFICIAIRE ── */
+  articleHead(3, 'BÉNÉFICIAIRE(S) DE L’ACTION DE FORMATION EN APPRENTISSAGE');
+  const benefName = [A.prenom, A.nom ? A.nom.toUpperCase() : ''].filter(Boolean).join(' ');
+  kv('Prénom(s) et nom', benefName || null, 8);
+  const cDebut = fmtDate(E.dateDebutContrat), cFin = fmtDate(E.dateFinContrat);
+  kv('Dates de début et de fin du contrat', cDebut && cFin ? `du ${cDebut} au ${cFin}` : null, 8);
+  gap(4); hline();
+
+  /* ── ARTICLE 4 : DISPOSITIONS FINANCIÈRES ── */
+  articleHead(4, 'DISPOSITIONS FINANCIÈRES LIÉES À LA CONVENTION');
+  para('Conformément à l’article L. 6211-1 du code du travail, la gratuité de la formation est garantie à l’apprenti et, le cas échéant, son représentant légal. Dès lors, aucune somme ne peut leur être demandée.', 9.5, helv, DGRY);
+  gap(8);
+
+  // Tableau de prise en charge financière
+  const years = [1,2,3,4].map(n => ({
+    n, A: num(E[`conv_a${n}_prix`]), B: num(E[`conv_a${n}_opco`]), C: num(E[`conv_a${n}_partemp`]),
+  })).filter(r => r.A != null || r.n === 1);
+  const cols = [
+    { h:['Année',''], w:0.10 },
+    { h:['Prix prestation','net de taxe [A]'], w:0.19 },
+    { h:['Pris en charge OPCO','[B]'], w:0.18 },
+    { h:['Participation','employeur [C]'], w:0.18 },
+    { h:['Montant à payer','OPCO [D=B-C]'], w:0.17 },
+    { h:['Total à verser','employeur [E=A-D]'], w:0.18 },
+  ];
+  const tW = cols.map(c => c.w * CW);
+  const rowH = 26, headH = 24;
+  guard(headH + rowH*years.length + 10);
+  let tx = ML;
+  page.drawRectangle({ x: ML, y: y-headH, width: CW, height: headH, color: HBG });
+  cols.forEach((c,i) => {
+    page.drawText(c.h[0], { x: tx+4, y: y-10, size:7.3, font: helvBold, color: BLK });
+    page.drawText(c.h[1], { x: tx+4, y: y-20, size:7.3, font: helvBold, color: BLK });
+    tx += tW[i];
+  });
+  y -= headH;
+  const yearLbl = { 1:'1ère année', 2:'2ème année', 3:'3ème année', 4:'4ème année' };
+  for (const r of years) {
+    guard(rowH);
+    const D = (r.B!=null || r.C!=null) ? (r.B||0) - (r.C||0) : null;
+    const E5 = (r.A!=null || D!=null) ? (r.A||0) - (D||0) : null;
+    const vals = [yearLbl[r.n], eur(r.A), eur(r.B), eur(r.C), D!=null?eur(D):'', E5!=null?eur(E5):''];
+    tx = ML;
+    cols.forEach((c,i) => {
+      page.drawText(vals[i]||'—', { x: tx+4, y: y-15, size:8.3, font: i===0?helvBold:helv, color: BLK });
+      tx += tW[i];
+    });
+    page.drawLine({ start:{x:ML,y:y-rowH}, end:{x:PW-MR,y:y-rowH}, thickness:0.4, color:LGRY });
+    y -= rowH;
+  }
+  // Bordures verticales du tableau
+  let bx = ML;
+  const tableTop = y + rowH*years.length + headH;
+  for (let i=0;i<=cols.length;i++) {
+    page.drawLine({ start:{x:bx,y:tableTop}, end:{x:bx,y}, thickness:0.4, color:LGRY });
+    if (i<cols.length) bx += tW[i];
+  }
+  page.drawLine({ start:{x:ML,y:tableTop}, end:{x:PW-MR,y:tableTop}, thickness:0.6, color:DGRY });
+  gap(10);
+
+  if (E.conv_majorationHandicap) kv('Majoration handicap', eur(E.conv_majorationHandicap), 8);
+  if (E.conv_modulationUltramarin) kv('Modulation ultramarins', eur(E.conv_modulationUltramarin), 8);
+  if (E.conv_modulationDistance) kv('Modulation formation à distance', eur(E.conv_modulationDistance), 8);
+  gap(4); hline();
+
+  /* ── ARTICLE 5 : FRAIS ANNEXES ── */
+  articleHead(5, 'FRAIS ANNEXES');
+  para('Les frais annexes concernent le temps en CFA uniquement. Lorsqu’ils sont financés par les CFA, l’OPCO prend en charge une partie de ces frais.', 9.5, helv, DGRY);
+  gap(6);
+  kv('Hébergement (6€/nuit) — nuitées envisagées', E.conv_nuitees, 8);
+  kv('Hébergement — montant', E.conv_montantHeb ? eur(E.conv_montantHeb) : null, 8);
+  kv('Restauration (3€/repas) — repas envisagés', E.conv_repas, 8);
+  kv('Restauration — montant', E.conv_montantRest ? eur(E.conv_montantRest) : null, 8);
+  gap(4);
+  kv('Premier équipement pédagogique', E.conv_equipement, 8);
+  if (E.conv_equipement === 'Oui') {
+    kv('Montant forfait OPCO', E.conv_equipementMontant ? eur(E.conv_equipementMontant) : null, 16);
+    const nature = [E.conv_equip_formation ? 'Équipement lié à la formation' : '', E.conv_equip_info ? 'Équipement informatique' : ''].filter(Boolean).join(', ');
+    if (nature) kv('Nature', nature, 16);
+  }
+  kv('Frais de mobilité internationale / ultramarine', E.conv_mobilite, 8);
+  if (E.conv_mobilite === 'Oui') {
+    kv('Montant forfait OPCO', E.conv_mobiliteMontant ? eur(E.conv_mobiliteMontant) : null, 16);
+  }
+  gap(4); hline();
+
+  /* ── ARTICLE 6 : MODALITÉS DE RÈGLEMENT ── */
+  articleHead(6, 'MODALITÉS DE RÈGLEMENT');
+  para(E.conv_reglement || 'Le reste à charge éventuel de l’entreprise est réglé selon les modalités convenues entre les parties, sur présentation de facture par le CFA.', 10);
+  gap(4); hline();
+
+  /* ── ARTICLE 7 : MANDAT ── */
+  articleHead(7, 'MANDAT');
+  checkbox(E.conv_mandat === 'non', 'L’entreprise signataire ne souhaite pas donner mandat au CFA signataire pour accomplir les formalités nécessaires aux opérations prévues à l’article L. 6224-1 du code du travail. L’entreprise signataire demeure seule responsable de l’accomplissement de ces opérations.');
+  gap(4);
+  checkbox(E.conv_mandat === 'oui', 'Par la présente convention, l’entreprise signataire donne mandat au CFA signataire, qui l’accepte, pour accomplir toutes formalités nécessaires aux opérations prévues à l’article L. 6224-1 du code du travail.');
+  gap(6);
+  para('En considération de l’exécution de son mandat, le CFA mandataire ne reçoit aucune rémunération du mandant, ledit mandat devant être accompli à titre gratuit. Le mandant s’engage à lui fournir l’ensemble des informations nécessaires à la bonne exécution de son mandat. Le mandataire s’engage à exécuter personnellement son mandat, dans le meilleur intérêt du mandant.', 9, helv, DGRY);
+  gap(4); hline();
+
+  /* ── ARTICLE 8 : CLAUSE RÉSOLUTOIRE ── */
+  articleHead(8, 'CLAUSE RÉSOLUTOIRE (SELON LA NÉGOCIATION DES PARTIES)');
+  para('En cas de refus de prise en charge par l’opérateur de compétences (OPCO), la présente convention peut être résolue de plein droit à la date de notification de ce refus, sans indemnité de part ni d’autre.', 10, helv, DGRY);
+  gap(4); hline();
+
+  /* ── ARTICLE 9 : FIN DE LA CONVENTION ── */
+  articleHead(9, 'FIN DE LA CONVENTION');
+  para('La présente convention se termine :');
+  para('•  dès la fin d’exécution du contrat d’apprentissage, à l’échéance mentionnée dans le contrat d’apprentissage ;', 10, helv, null, 10);
+  para('•  en cas de refus de prise en charge par un OPCO, par effet de la clause résolutoire prévue à l’article 8 ;', 10, helv, null, 10);
+  para('•  en cas de rupture anticipée du contrat, à la date d’effet de celle-ci.', 10, helv, null, 10);
+  gap(4); hline();
+
+  /* ── ARTICLE 10 : DIFFÉRENDS ── */
+  articleHead(10, 'DIFFÉRENDS ÉVENTUELS');
+  para(`Si une contestation ou un différend ne peuvent être réglés à l’amiable, le Tribunal de ${E.conv_tribunal || '...'} sera seul compétent pour régler le litige.`);
+  gap(10);
+
+  hline(0.8, rgb(0.4,0.4,0.4));
+
+  /* ── SIGNATURES ── */
+  gap(6);
+  const lieuSign = E.villeEmp || E.cfa_ville || '';
+  const todaySign = new Date().toLocaleDateString('fr-FR');
+  para(`Fait en double exemplaire, à ${lieuSign || '...'}, le ${todaySign}`);
+  gap(16);
+  guard(90);
+
+  const colW = CW / 2;
+  const c1 = ML, c2 = ML + colW;
+  page.drawText('Pour l’entreprise', { x:c1,   y, size:9, font:helvBold, color:BLK });
+  page.drawText('Pour l’organisme',  { x:c2+6, y, size:9, font:helvBold, color:BLK });
+  y -= 14;
+  page.drawText(empRep || '...', { x:c1,   y, size:9, font:helv, color:BLK });
+  page.drawText(cfaRep || '...', { x:c2+6, y, size:9, font:helv, color:BLK });
+  y -= 12;
+  page.drawText('Cachet de l’entreprise cliente :', { x:c1,   y, size:8, font:helv, color:DGRY });
+  page.drawText('Cachet du CFA :',                        { x:c2+6, y, size:8, font:helv, color:DGRY });
+  y -= 56;
+  [c1, c2+6].forEach(cx => {
+    page.drawRectangle({ x:cx, y, width:colW-16, height:50, borderColor:LGRY, borderWidth:0.7, color:rgb(1,1,1) });
+  });
+  y -= 16;
+
+  gap(14);
+  page.drawLine({ start:{x:ML,y}, end:{x:PW-MR,y}, thickness:0.4, color:LGRY });
+  y -= 11;
+  const foot = 'forma+ - Document généré automatiquement';
+  page.drawText(foot, { x:(PW-helv.widthOfTextAtSize(foot,7))/2, y, size:7, font:helv, color:LGRY });
+
+  return await pdfDoc.save();
+}
+
+/* ---------- Construction du PDF — Fiche de liaison CFA / Employeur ---------- */
+async function buildFicheLiaison() {
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const helv     = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const helvObl  = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  pdfDoc.setTitle('Fiche de liaison CFA / Employeur');
+  pdfDoc.setAuthor('forma+');
+  pdfDoc.setProducer('forma+');
+
+  const A = STATE.apprentiData || {};
+  const E = STATE.entrepriseData || {};
+
+  const PW = 595, PH = 842, ML = 48, MR = 48, MB = 54;
+  const CW = PW - ML - MR;
+
+  const ACCENT = rgb(0.62, 0.16, 0.20);  // rouge foncé (modèle officiel)
+  const BLK    = rgb(0.12, 0.12, 0.14);
+  const GRY    = rgb(0.42, 0.42, 0.46);
+  const BOXBG  = rgb(0.945, 0.93, 0.90); // beige clair
+  const LINE   = rgb(0.82, 0.82, 0.85);
+
+  let page = pdfDoc.addPage([PW, PH]);
+  let y = PH - 44;
+
+  function newPage() { page = pdfDoc.addPage([PW, PH]); y = PH - 44; }
+  function guard(h) { if (y - h < MB) newPage(); }
+
+  function wrap(text, font, size, maxW) {
+    const words = (text || '').split(' ');
+    const lines = []; let line = '';
+    for (const w of words) {
+      const cand = line ? line + ' ' + w : w;
+      if (font.widthOfTextAtSize(cand, size) > maxW && line) { lines.push(line); line = w; }
+      else line = cand;
+    }
+    if (line) lines.push(line);
+    return lines.length ? lines : [''];
+  }
+  function fit(text, font, size, maxW) {
+    text = String(text == null ? '' : text);
+    if (!text) return '';
+    if (font.widthOfTextAtSize(text, size) <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && font.widthOfTextAtSize(t + '…', size) > maxW) t = t.slice(0, -1);
+    return t + '…';
+  }
+  function ctext(t, size, font, color, yy) {
+    page.drawText(t, { x: (PW - font.widthOfTextAtSize(t, size)) / 2, y: yy, size, font, color });
+  }
+  function rtext(t, size, font, color, yy) {
+    page.drawText(t, { x: PW - MR - font.widthOfTextAtSize(t, size), y: yy, size, font, color });
+  }
+
+  function section(title) {
+    guard(30);
+    y -= 8;
+    page.drawText(title, { x: ML, y, size: 11, font: helvBold, color: ACCENT });
+    y -= 5;
+    page.drawLine({ start: { x: ML, y }, end: { x: PW - MR, y }, thickness: 1.4, color: ACCENT });
+    y -= 15;
+  }
+
+  function drawField(label, value, x, w) {
+    const boxH = 16;
+    page.drawText(fit(label, helv, 7.5, w), { x, y, size: 7.5, font: helv, color: GRY });
+    const top = y - 10;
+    page.drawRectangle({ x, y: top - boxH, width: w, height: boxH, color: BOXBG });
+    page.drawText(fit(value, helv, 9, w - 12), { x: x + 6, y: top - boxH + 5, size: 9, font: helv, color: BLK });
+  }
+  function row(cols) {
+    const gap = 10, n = cols.length;
+    const totalFlex = cols.reduce((s, c) => s + (c.flex || 1), 0);
+    const availW = CW - gap * (n - 1);
+    guard(34);
+    let x = ML;
+    for (const c of cols) { const w = availW * (c.flex || 1) / totalFlex; drawField(c.l, c.v, x, w); x += w + gap; }
+    y -= 34;
+  }
+  function multiField(label, value) {
+    const lh = 12, lines = [];
+    (value || '').split(/\r?\n/).forEach(ln => wrap(ln || ' ', helv, 8.5, CW - 16).forEach(w => lines.push(w)));
+    if (!lines.length) lines.push('');
+    const boxH = Math.max(64, lines.length * lh + 12);
+    guard(boxH + 20);
+    page.drawText(label, { x: ML, y, size: 7.5, font: helv, color: GRY });
+    y -= 10;
+    page.drawRectangle({ x: ML, y: y - boxH, width: CW, height: boxH, color: BOXBG });
+    let ty = y - 14;
+    for (const l of lines) { page.drawText(l, { x: ML + 8, y: ty, size: 8.5, font: helv, color: BLK }); ty -= lh; }
+    y -= boxH + 12;
+  }
+  function validation(role) {
+    guard(46);
+    y -= 4;
+    page.drawText(role, { x: ML, y, size: 9, font: helvBold, color: BLK });
+    y -= 16;
+    row([{ l: 'Civilité  Prénom  Nom', v: '', flex: 3 }, { l: 'Date', v: '', flex: 1 }]);
+  }
+
+  /* ── EN-TÊTE ── */
+  rtext('Formation Tout au Long de la Vie', 9, helvBold, ACCENT, y);
+  rtext('Année Universitaire ' + (E.f_annee || defaultAnneeUniv()), 8, helv, GRY, y - 12);
+  y -= 40;
+  ctext('Fiche de liaison CFA / Employeur', 18, helvBold, ACCENT, y);
+  y -= 18;
+  ctext('À compléter et retourner à : ' + (E.f_emailRetour || ''), 9, helv, GRY, y);
+  y -= 14;
+  ctext('La fiche complète est obligatoire pour l\'élaboration de la convention de formation', 8.5, helvBold, BLK, y);
+  y -= 22;
+
+  /* ── 1 — La formation ── */
+  section('1 — La formation');
+  row([{ l: 'Niveau / année', v: E.f_niveauAnnee, flex: 1 }, { l: 'Intitulé de la formation', v: E.f_intitule, flex: 2 }]);
+
+  /* ── 2 — L'apprenti(e) ── */
+  section('2 — L\'apprenti(e)');
+  row([{ l: 'Nom', v: (A.nom || '').toUpperCase() }, { l: 'Prénom', v: A.prenom }]);
+  row([{ l: 'Portable', v: A.telephone }, { l: 'e-mail', v: A.email }]);
+
+  /* ── 3 — L'entreprise ── */
+  section('3 — L\'entreprise');
+  row([{ l: 'Dénomination de l\'entreprise', v: E.f_denomination, flex: 2 }, { l: 'SIRET', v: E.f_siret, flex: 1 }]);
+  row([{ l: 'Adresse', v: E.f_adresseEmp }]);
+  row([{ l: 'Code postal', v: E.f_cpEmp, flex: 1 }, { l: 'Ville', v: E.f_villeEmp, flex: 2 }]);
+  row([{ l: 'OPCO', v: E.f_opco }, { l: 'Code APE / NAF', v: E.f_codeNAF }, { l: 'Code IDCC', v: E.f_idcc }]);
+
+  /* ── 4 — Facturation ── */
+  section('4 — La personne en charge de la facturation');
+  row([{ l: 'Nom', v: E.f_nomFact }, { l: 'Prénom', v: E.f_prenomFact }]);
+  row([{ l: 'Téléphone', v: E.f_telFact }, { l: 'e-mail', v: E.f_emailFact }]);
+
+  /* ── 5 — Le maître d'apprentissage ── */
+  section('5 — Le maître d\'apprentissage');
+  row([{ l: 'Fonction', v: E.f_fonctionMaitre }]);
+  row([{ l: 'Nom', v: (E.f_nomMaitre || '').toUpperCase() }, { l: 'Prénom', v: E.f_prenomMaitre }]);
+  row([{ l: 'Portable', v: E.f_telMaitre }, { l: 'e-mail', v: E.f_emailMaitre }]);
+  row([{ l: 'Adresse pour la visite du tuteur pédagogique (si différente de l\'entreprise)', v: E.f_adresseVisite }]);
+
+  /* ── 6 — L'apprenti(e) dans l'entreprise ── */
+  section('6 — L\'apprenti(e) dans l\'entreprise');
+  row([{ l: 'Date de début du contrat', v: fmtDate(E.f_dateDebutContrat) }, { l: 'Date de fin du contrat', v: fmtDate(E.f_dateFinContrat) }]);
+  row([{ l: 'Service accueillant l\'apprenti(e)', v: E.f_service }]);
+  row([{ l: 'Intitulé du poste occupé', v: E.f_intitulePoste }]);
+  multiField('Description succincte des missions confiées à l\'apprenti(e)', E.f_missions);
+  guard(14);
+  page.drawText('Merci de joindre impérativement une fiche de poste à cette fiche de liaison.', { x: ML, y, size: 8, font: helvObl, color: GRY });
+  y -= 14;
+
+  /* ── 7 — La validation ── */
+  section('7 — La validation de la fiche de liaison');
+  guard(20);
+  for (const l of wrap('Nous vous rappelons que la faisabilité du contrat d\'apprentissage est soumise à deux conditions : l\'obtention du diplôme en cours et l\'admission au sein de la formation.', helvObl, 8, CW)) {
+    guard(11); page.drawText(l, { x: ML, y, size: 8, font: helvObl, color: GRY }); y -= 11;
+  }
+  y -= 6;
+  validation('Validé par le service RH (entreprise)');
+  validation('Validé par le maître d\'apprentissage (entreprise)');
+  validation('Validé par le responsable pédagogique (CFA)');
+
+  /* ── Pied de page ── */
+  guard(20);
+  y -= 6;
+  page.drawLine({ start: { x: ML, y }, end: { x: PW - MR, y }, thickness: 0.4, color: LINE });
+  y -= 11;
+  ctext('forma+ — Document généré automatiquement', 7, helv, LINE, y);
+
+  return await pdfDoc.save();
+}
+
+/* ============================================================
+   Modal méthode de remplissage
+============================================================ */
+function handleOverlayClick(e) {
+  if (e.target === $('modalMethod')) closeMethodModal();
+}
+
+function closeMethodModal() {
+  $('modalMethod').classList.add('hidden');
+  $('methodOptions').classList.remove('hide');
+  $('methodLoading').classList.remove('show');
+}
+
+function chooseManual() {
+  closeMethodModal();
+  renderForm();
+}
+
+function chooseDocument() {
+  $('docFileInput').click();
+}
+
+async function handleDocUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  $('methodOptions').classList.add('hide');
+  $('methodLoading').classList.add('show');
+
+  try {
+    const text = await extractPdfText(file);
+    const fields = parseDocumentFields(text);
+
+    closeMethodModal();
+    renderForm();
+    setTimeout(() => {
+      prefillForm(fields);
+      showPrefillBanner(Object.keys(fields).length);
+    }, 120);
+
+  } catch (err) {
+    console.error('Lecture document:', err);
+    closeMethodModal();
+    renderForm();
+    setTimeout(() => {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;font-size:13px;color:#856404;margin-bottom:0;';
+      banner.innerHTML = `<strong>⚠️ Lecture échouée</strong> — ${err.message}. Remplissez le formulaire manuellement.`;
+      const grid = $('formGrid');
+      if (grid && grid.firstChild) grid.insertBefore(banner, grid.firstChild);
+    }, 150);
+  }
+}
+
+/* ── Extraction texte PDF via pdf.js ── */
+async function extractPdfText(file) {
+  if (!window.pdfjsLib) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('Impossible de charger pdf.js'));
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  const maxPages = Math.min(pdf.numPages, 15);
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+/* ── Parsing regex du document (sans API) ── */
+function parseDocumentFields(text) {
+  const fields = {};
+
+  // Helper : cherche la première valeur qui matche un des patterns
+  function grab(patterns) {
+    for (const re of patterns) {
+      const m = text.match(re);
+      if (m && m[1]) {
+        const v = m[1].trim().replace(/\s{2,}/g, ' ');
+        // Ignorer les placeholders vides (lignes de points)
+        if (v.length >= 2 && !/^[.\s...-]+$/.test(v)) return v;
+      }
+    }
+    return null;
+  }
+
+  // ── Détection document DEJEPS Badminton FFBaD ──
+  const isDejeps = /DEJEPS/i.test(text) && /[Bb]adminton/i.test(text) && /FFBAD|FFBaD|Fédération Française/i.test(text);
+
+  if (isDejeps) {
+    fields.intitule    = 'DEJEPS spécialité perfectionnement sportif mention Badminton';
+    fields.diplomeVise = 'DEJEPS Perfectionnement Sportif mention Badminton';
+    fields.codeRNCP    = '36252';
+    fields.duree       = '1200';
+    fields.lieuForm    = 'CREPS Centre Val de Loire - Bourges';
+    fields.nomOPCO     = 'AFDAS';
+
+    // Modalités pédagogiques (700h en centre dont 140h de FOAD à distance + 500h en alternance)
+    fields.conv_modalites      = 'Mixte';
+    fields.conv_heuresDistance = '140';
+    fields.conv_contenu  = 'Se référer au référentiel du diplôme (Annexe 2 - Description du diplôme, DEJEPS Perfectionnement Sportif mention Badminton).';
+    fields.conv_periodes = 'Voir planning de la formation en annexe (Annexe 1 - DEJEPS Badminton, promotion 2026-2027).';
+
+    // Identité du CFA responsable (FFBAD/FORMABAD), reprise de l'exemple de CERFA pré-rempli du dossier
+    fields.cfa_denomination = 'FEDERATION FRANCAISE BADMINTON';
+    fields.cfa_siret        = '33173384000044';
+    fields.cfa_uai          = '0932811A';
+    fields.cfa_adresse      = '9-11 Avenue Michelet';
+    fields.cfa_cp           = '93583';
+    fields.cfa_ville        = 'Saint-Ouen';
+    fields.cfa_declaration  = '11930420293';
+    fields.cfa_contactNom   = 'Julien Pourcelot';
+    fields.cfa_contactEmail = 'julien.pourcelot@ffbad.org';
+    fields.cfa_contactTel   = '0659811720';
+
+    // Dates de la session (ex : "24 juin 2026 au 17 décembre 2027")
+    const sessionMatch = text.match(/(\d{1,2})\s+juin\s+(\d{4})\s+au\s+(\d{1,2})\s+d[ée]cembre\s+(\d{4})/i);
+    if (sessionMatch) {
+      fields.dateDebut = `${sessionMatch[2]}-06-${sessionMatch[1].padStart(2,'0')}`;
+      fields.dateFin   = `${sessionMatch[4]}-12-${sessionMatch[3].padStart(2,'0')}`;
+      fields.dateDebutContrat = fields.dateDebut;
+    }
+
+    // Coût et frais annexes selon le type de contrat choisi (apprentissage = 10200€, autre = 9100€)
+    if (needsCerfa()) {
+      fields.cout = '10200';
+      // Premier équipement pédagogique : forfait 500€ pris en charge par le CFA (contrats d'apprentissage uniquement)
+      fields.conv_equipement        = 'Oui';
+      fields.conv_equipementMontant = '500';
+    } else {
+      fields.cout = '9100';
+    }
+  }
+
+  // ── Structure d'alternance (employeur) ──
+  // Ignoré pour les dossiers DEJEPS FFBaD : ce document ne renseigne jamais l'employeur
+  // (c'est un dossier de candidature vierge côté structure d'accueil) — seule l'identité du
+  // CFA (FFBAD/FORMABAD) y est présente, déjà extraite explicitement ci-dessus. Sans ce garde,
+  // les règles génériques ci-dessous captent par erreur l'identité du CFA comme si c'était
+  // celle de l'employeur (ex : « Dénomination du CFA responsable » matche le motif générique
+  // « responsable : ... »).
+  if (!isDejeps) {
+    fields.raisonSociale = grab([
+      /Structure principale[^:]*:\s*([^\n\r.]{3,80})/,
+      /[Nn]om de l.employeur\s*:\s*([^\n\r.]{3,80})/,
+      /[Rr]aison sociale\s*:\s*([^\n\r.]{3,80})/,
+    ]);
+
+    // Président / responsable
+    const presRaw = grab([
+      /[Nn]om du [Pp]r[ée]sident[^:]*:\s*([^\n\r.]{3,60})/,
+      /[Rr]esponsable\s*:\s*([^\n\r.]{3,60})/,
+    ]);
+    if (presRaw) {
+      const parts = presRaw.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        // Si premier mot tout en majuscules → c'est le nom
+        if (parts[0] === parts[0].toUpperCase() && parts[0].length > 2) {
+          fields.nomResp    = parts[0];
+          fields.prenomResp = parts.slice(1).join(' ');
+        } else {
+          fields.prenomResp = parts[0];
+          fields.nomResp    = parts.slice(1).join(' ');
+        }
+      } else {
+        fields.nomResp = presRaw.trim();
+      }
+    }
+
+    // Adresse employeur
+    const adrRaw = grab([
+      /Adresse de l.(?:employeur|[ée]tablissement)[^:]*:\s*([^\n\r]{5,100})/,
+      /Adresse\s*:\s*([^\n\r]{5,100})/,
+    ]);
+    if (adrRaw) {
+      // Séparer CP et ville s'ils sont dans la même chaîne
+      const cpVille = adrRaw.match(/^(.*?)\s+(\d{5})\s+(.+)$/);
+      if (cpVille) {
+        fields.adresseEmp = cpVille[1].trim();
+        fields.cpEmp      = cpVille[2];
+        fields.villeEmp   = cpVille[3].trim();
+      } else {
+        fields.adresseEmp = adrRaw;
+      }
+    }
+
+    // Code postal seul
+    if (!fields.cpEmp) {
+      fields.cpEmp = grab([/Code Postal\s*:\s*(\d{5})/, /\b(\d{5})\b/]);
+    }
+
+    // Ville seule
+    if (!fields.villeEmp) {
+      fields.villeEmp = grab([
+        /[Cc]ommune\s*:\s*([A-ZÀ-Ü][a-zA-ZÀ-ü\s-]{2,40})/,
+        /[Vv]ille\s*:\s*([A-ZÀ-Ü][a-zA-ZÀ-ü\s-]{2,40})/,
+      ]);
+    }
+
+    // Email
+    const emailMatch = text.match(/(?:[Mm]ail|[Ee]-?[Mm]ail|[Cc]ourriel)\s*:\s*([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/);
+    if (emailMatch) fields.emailEmp = emailMatch[1];
+
+    // SIRET employeur (14 chiffres)
+    const siretMatch = text.match(/N[°o\.]\s*SIRET[^:\d]*:\s*([\d\s]{14,20})/i)
+                    || text.match(/SIRET\s*:\s*([\d\s]{14,20})/i);
+    if (siretMatch) {
+      const raw = siretMatch[1].replace(/\D/g,'').substring(0, 14);
+      if (raw.length === 14) fields.siret = raw;
+    }
+
+    // Code NAF
+    fields.codeNAF = grab([
+      /[Cc]ode (?:activit[ée]|NAF|APE)[^:]*:\s*([0-9]{4}[A-Z])/,
+      /NAF\s*:\s*([0-9]{4}[A-Z])/,
+    ]);
+
+    // Tuteur / maître d'apprentissage envisagé
+    const tutMatch = text.match(/[Tt]uteur envisag[ée][\s\S]{0,200}?[Nn]om,?\s*[Pp]r[ée]nom\s*:\s*([^\n\r.]{3,50})/);
+    if (tutMatch) {
+      const name = tutMatch[1].trim();
+      const parts = name.split(/[,\s]+/);
+      if (parts.length >= 2) {
+        fields.nomMaitre    = parts[0];
+        fields.prenomMaitre = parts.slice(1).join(' ');
+      }
+    }
+
+    // Adresse mail du tuteur
+    const tutMailMatch = text.match(/[Aa]dresse mail\s*:\s*([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/);
+    if (tutMailMatch && !fields.emailEmp) fields.emailEmp = tutMailMatch[1];
+  }
+
+  // Supprimer les valeurs nulles
+  return Object.fromEntries(Object.entries(fields).filter(([, v]) => v != null && String(v).trim() !== ''));
+}
+
+/* ── Pré-remplissage du formulaire ── */
+function prefillForm(fields) {
+  if (!fields) return;
+
+  const textFields = [
+    'intitule', 'diplomeVise', 'codeRNCP', 'dateDebut', 'dateFin',
+    'duree', 'lieuForm', 'cout',
+    'raisonSociale', 'siret', 'codeNAF', 'adresseEmp', 'cpEmp', 'villeEmp',
+    'emailEmp', 'nomResp', 'prenomResp', 'telEmp', 'idcc',
+    'nomMaitre', 'prenomMaitre', 'dateDebutContrat', 'dateFinContrat',
+    // Convention — CFA / Organisme de formation
+    'cfa_denomination', 'cfa_siret', 'cfa_uai', 'cfa_adresse', 'cfa_cp', 'cfa_ville',
+    'cfa_declaration', 'cfa_prefecture', 'cfa_repNom', 'cfa_repPrenom',
+    'cfa_contactNom', 'cfa_contactEmail', 'cfa_contactTel',
+    // Convention — pédagogie
+    'conv_modalites', 'conv_heuresDistance', 'conv_moyens', 'conv_suivi',
+    'conv_obtention', 'conv_contenu', 'conv_periodes',
+    // Convention — financement
+    'conv_equipementMontant', 'conv_mobiliteMontant',
+  ];
+
+  for (const id of textFields) {
+    if (fields[id]) {
+      const el = $(id);
+      if (!el) continue;
+      el.value = fields[id];
+      el.dispatchEvent(new Event('input')); // déclenche le formateur SIRET + efface les erreurs
+    }
+  }
+
+  // OPCO : si un OPCO est trouvé, sélectionner le mode OPCO et afficher le champ nom
+  if (fields.nomOPCO) {
+    setRadio('financement', 'OPCO');
+    toggleOPCO();
+    setVal('nomOPCO', fields.nomOPCO);
+  }
+
+  // Premier équipement pédagogique : sélectionner Oui/Non et afficher le détail si besoin
+  if (fields.conv_equipement) {
+    setRadio('conv_equipement', fields.conv_equipement);
+    toggleConvEquipement();
+  }
+
+  // Frais de mobilité internationale : sélectionner Oui/Non et afficher le détail si besoin
+  if (fields.conv_mobilite) {
+    setRadio('conv_mobilite', fields.conv_mobilite);
+    toggleConvMobilite();
+  }
+}
+
+function showPrefillBanner(count) {
+  const banner = document.createElement('div');
+  banner.className = 'prefill-banner';
+  const msg = count > 0
+    ? `<strong>${count} champ${count > 1 ? 's' : ''} pré-rempli${count > 1 ? 's' : ''}.</strong> Vérifiez les valeurs et complétez les champs manquants avant de continuer.`
+    : `<strong>Document lu.</strong> Aucune information n'a pu être extraite automatiquement — remplissez les champs manuellement.`;
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+    </svg>
+    <p>${msg}</p>
+  `;
+  const grid = $('formGrid');
+  if (grid && grid.firstChild) grid.insertBefore(banner, grid.firstChild);
+}
+
+/* ============================================================
+   Envoi automatique du CERFA à l'entreprise via EmailJS
+============================================================ */
+function getSendTargetEmail() {
+  const E = STATE.entrepriseData || {};
+  return E.emailEmp || E.f_emailMaitre || E.f_emailFact || E.f_emailRetour || '';
+}
+
+function setupSendBox() {
+  const email = getSendTargetEmail();
+  if (!email) return;
+  $('sendToEmail').textContent = email;
+  setSendState('confirm');
+  $('sendBox').style.display = 'block';
+}
+
+function setSendState(state) {
+  ['confirm','loading','success','error'].forEach(s => {
+    const el = $(`sendState${s.charAt(0).toUpperCase() + s.slice(1)}`);
+    if (el) el.style.display = s === state ? (s === 'loading' ? 'flex' : 'block') : 'none';
+  });
+}
+
+async function sendCerfaToEntreprise() {
+  const email = getSendTargetEmail();
+  const types = STATE.docTypes.filter(t => STATE.pdfs[t]);
+  if (!email || types.length === 0) { alert('Le(s) document(s) ne sont pas encore prêts.'); return; }
+
+  setSendState('loading');
+
+  const E = STATE.entrepriseData || {};
+  const A = STATE.apprentiData || {};
+  const nom = `${A.prenom || ''} ${(A.nom || '').toUpperCase()}`.trim();
+
+  try {
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+    for (const type of types) {
+      const bytes = STATE.pdfs[type];
+      const docLabel = DOC_BUILDERS[type].label;
+
+      // Convertit les bytes PDF en base64 (data URL)
+      let b64 = '';
+      const CHUNK = 8192;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        b64 += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
+      const dataUrl = 'data:application/pdf;base64,' + btoa(b64);
+      const filename = `${DOC_BUILDERS[type].file}_${(A.nom||'dossier').toLowerCase()}-${(A.prenom||'').toLowerCase()}.pdf`;
+
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email:     email,
+        to_name:      E.raisonSociale || E.f_denomination || 'l\'entreprise',
+        apprenti_nom: nom,
+        doc_label:    docLabel,
+        message:      `Bonjour,\n\nVeuillez trouver en pièce jointe le ${docLabel} dûment complété par ${nom}.\n\nCordialement,\n${nom}`,
+        attachment:   dataUrl,
+        filename:     filename,
+      });
+    }
+
+    setSendState('success');
+  } catch (err) {
+    console.error('EmailJS error:', err);
+    setSendState('error');
+  }
+}
+
+function retrySend() {
+  setSendState('confirm');
+}
+
+/* ============================================================
+   Pré-remplissage apprenti par l'employeur
+============================================================ */
+function collectApprentiPrefill() {
+  const d = {};
+  const civ = getRadio('civilite');
+  if (civ) d.civilite = civ;
+  const textFields = ['nom','prenom','dateNaissance','lieuNaissance','nationalite','adresse','codePostal','ville','email','telephone','niveauFormation','dernierDiplome'];
+  for (const id of textFields) {
+    const v = getVal(id);
+    if (v) d[id] = v;
+  }
+  return Object.keys(d).length > 0 ? d : null;
+}
+
+function applyApprentiPrefill(data) {
+  if (!data) return;
+  const textFields = ['nom','prenom','dateNaissance','lieuNaissance','nationalite','adresse','codePostal','ville','email','telephone','niveauFormation','dernierDiplome'];
+  let count = 0;
+  for (const id of textFields) {
+    if (data[id]) {
+      setVal(id, data[id]);
+      const el = $(id);
+      if (el) { el.classList.add('prefilled'); count++; }
+    }
+  }
+  if (data.civilite) { setRadio('civilite', data.civilite); count++; }
+  if (count > 0) showApprentiPrefillBanner(count);
+}
+
+function showApprentiPrefillBanner(count) {
+  const banner = $('apprentiPrefillBanner');
+  if (!banner) return;
+  banner.innerHTML = `
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+    <p style="margin:0;font-size:13px;color:var(--gray-700);"><strong style="color:var(--purple-dark);">${count} champ${count > 1 ? 's' : ''} pré-rempli${count > 1 ? 's' : ''} par votre employeur.</strong> Les champs surlignés ont été pré-remplis — vérifiez-les et corrigez si besoin avant de valider.</p>
+  `;
+  banner.classList.add('show');
+  banner.style.display = 'flex';
 }
 
 /* ============================================================
